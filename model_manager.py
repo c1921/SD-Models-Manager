@@ -141,13 +141,18 @@ def create_ui(manager: ModelManager):
 
     @ui.page('/')
     def home():
-        with ui.header().classes('bg-blue-600 text-white'):
+        # 添加亮暗模式切换开关，靠右并默认开启暗黑模式
+        dark = ui.dark_mode()
+        dark.enable()  # 确保在页面加载时启用暗色模式
+        
+        with ui.header().classes('bg-blue-600 text-white flex justify-between items-center'):
             ui.label('Stable Diffusion 模型管理器').classes('text-h6')
+            switch = ui.switch('暗黑模式', value=True, on_change=lambda e: dark.enable() if e.value else dark.disable()).classes('ml-auto')
         
         with ui.row().classes('w-full p-4'):
             path_input = ui.input(
                 label='模型目录路径', 
-                value=str(manager.models_path),
+                value='',
                 placeholder='请输入模型目录路径'
             ).classes('w-96')
             
