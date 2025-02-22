@@ -119,6 +119,26 @@ class ModelManager:
         }
 
 def create_ui(manager: ModelManager):
+    @ui.refreshable
+    def model_grid():
+        """可刷新的模型网格组件"""
+        with ui.grid(columns=3).classes('gap-4 p-4'):
+            for model_path, _ in manager.models_info.items():
+                model_info = manager.get_model_display_info(model_path)
+                with ui.card().classes('w-full'):
+                    if model_info['preview_url']:
+                        ui.image(model_info['preview_url']).classes('w-full h-48 object-cover')
+                    
+                    with ui.card_section():
+                        ui.label(model_info['name']).classes('text-h6')
+                        ui.label(f"类型: {model_info['type']}")
+                        ui.label(f"下载次数: {model_info['download_count']}")
+                        ui.label(f"评分: {model_info['rating']}")
+                        
+                    with ui.expansion('详细信息', icon='info'):
+                        ui.label(f"哈希值: {model_info['hash']}")
+                        ui.markdown(model_info['description'])
+
     @ui.page('/')
     def home():
         with ui.header().classes('bg-blue-600 text-white'):
@@ -141,7 +161,7 @@ def create_ui(manager: ModelManager):
                     return
                 manager.update_models_path(new_path)
                 ui.notify('路径已保存', color='positive')
-                app.reload()  # 重新加载页面
+                model_grid.refresh()
             
             ui.button('保存路径', on_click=save_path).classes('bg-green-500 text-white')
             
@@ -160,7 +180,7 @@ def create_ui(manager: ModelManager):
                     await asyncio.to_thread(manager.scan_models)
                     await asyncio.to_thread(manager.save_models_info)
                     ui.notify('模型扫描完成')
-                    app.reload()  # 重新加载页面以显示新数据
+                    model_grid.refresh()  # 只刷新模型网格部分
                 finally:
                     loading_label.text = ''
                     refresh_btn.enable()
@@ -171,22 +191,7 @@ def create_ui(manager: ModelManager):
             ui.label('请先设置模型目录路径').classes('text-red-500 p-4')
             return
             
-        with ui.grid(columns=3).classes('gap-4 p-4'):
-            for model_path, _ in manager.models_info.items():
-                model_info = manager.get_model_display_info(model_path)
-                with ui.card().classes('w-full'):
-                    if model_info['preview_url']:
-                        ui.image(model_info['preview_url']).classes('w-full h-48 object-cover')
-                    
-                    with ui.card_section():
-                        ui.label(model_info['name']).classes('text-h6')
-                        ui.label(f"类型: {model_info['type']}")
-                        ui.label(f"下载次数: {model_info['download_count']}")
-                        ui.label(f"评分: {model_info['rating']}")
-                        
-                    with ui.expansion('详细信息', icon='info'):
-                        ui.label(f"哈希值: {model_info['hash']}")
-                        ui.markdown(model_info['description'])
+        model_grid()  # 显示模型网格
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='模型管理器')
