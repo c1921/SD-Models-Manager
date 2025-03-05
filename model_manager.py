@@ -20,9 +20,18 @@ from concurrent.futures import ThreadPoolExecutor
 import webbrowser
 import threading
 import socket
+import tkinter as tk
+from tkinter import filedialog
 
 class PathUpdate(BaseModel):
     path: str
+
+async def select_directory() -> str:
+    """使用文件对话框选择目录"""
+    root = tk.Tk()
+    root.withdraw()  # 隐藏主窗口
+    path = filedialog.askdirectory()
+    return path if path else ""
 
 class ModelManager:
     def __init__(self, config_file="config.json"):
@@ -227,12 +236,14 @@ class ModelManager:
 
     def get_all_models_info(self) -> list:
         """获取所有模型的显示信息"""
+        current_path = str(self.models_path)
         return [
             {
                 "path": model_path,
                 **self.get_model_display_info(model_path)
             }
             for model_path in self.models_info.keys()
+            if str(model_path).startswith(current_path)
         ]
 
 # 创建 FastAPI 应用
@@ -294,6 +305,12 @@ async def get_config():
         "models_path": str(manager.models_path),
         "is_path_valid": os.path.exists(manager.models_path) if manager.models_path else False
     }
+
+@app.post("/api/select_directory")
+async def select_directory_endpoint():
+    """选择目录"""
+    path = await select_directory()
+    return {"path": path}
 
 def find_free_port(start_port=8080, max_tries=100):
     """查找可用的端口号"""
