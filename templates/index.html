@@ -74,6 +74,23 @@
             <div class="text-muted" id="progressMessage"></div>
         </div>
 
+        <!-- 筛选按钮组 -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <!-- 基础模型筛选 -->
+            <div class="btn-group me-2" role="group" aria-label="基础模型筛选">
+                <button type="button" class="btn btn-outline-secondary active" data-filter="baseModel" data-value="">
+                    <i class="bi bi-box"></i> 全部基础模型
+                </button>
+            </div>
+
+            <!-- 类型筛选 -->
+            <div class="btn-group" role="group" aria-label="类型筛选">
+                <button type="button" class="btn btn-outline-secondary active" data-filter="type" data-value="">
+                    <i class="bi bi-collection"></i> 全部类型
+                </button>
+            </div>
+        </div>
+
         <!-- 标签页导航 -->
         <ul class="nav nav-tabs" id="modelTabs" role="tablist">
         </ul>
@@ -108,6 +125,13 @@
         const error = document.getElementById('error');
         const darkModeToggle = document.getElementById('darkModeToggle');
         const scanCompleteToast = new bootstrap.Toast(document.getElementById('scanCompleteToast'));
+
+        // 存储所有模型数据
+        let allModels = [];
+        let currentFilters = {
+            baseModel: new Set(),
+            type: new Set()
+        };
 
         // 检查系统暗黑模式
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -214,116 +238,219 @@
             }
         });
 
+        // 显示模型列表
+        function displayModels(models) {
+            // 按类型分组模型
+            const modelsByType = models.reduce((acc, model) => {
+                const type = model.type || '未知';
+                if (!acc[type]) {
+                    acc[type] = [];
+                }
+                acc[type].push(model);
+                return acc;
+            }, {});
+
+            // 清空现有标签和内容
+            modelTabs.innerHTML = '';
+            modelTabContent.innerHTML = '';
+            
+            // 创建"全部"标签
+            const allCount = models.length;
+            modelTabs.innerHTML = `
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                        全部 <span class="badge text-bg-secondary">${allCount}</span>
+                    </button>
+                </li>
+            `;
+            
+            // 创建"全部"内容面板
+            const allPane = document.createElement('div');
+            allPane.className = 'tab-pane fade show active';
+            allPane.id = 'all';
+            allPane.role = 'tabpanel';
+            
+            const allGrid = document.createElement('div');
+            allGrid.className = 'row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3';
+
+            // 按类型创建分组
+            Object.entries(modelsByType).forEach(([type, typeModels], index) => {
+                // 创建标签
+                const tabId = `type-${type.toLowerCase().replace(/\s+/g, '-')}`;
+                const tab = document.createElement('li');
+                tab.className = 'nav-item';
+                tab.role = 'presentation';
+                tab.innerHTML = `
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#${tabId}" type="button" role="tab">
+                        ${type} <span class="badge text-bg-secondary">${typeModels.length}</span>
+                    </button>
+                `;
+                modelTabs.appendChild(tab);
+
+                // 创建内容面板
+                const pane = document.createElement('div');
+                pane.className = 'tab-pane fade';
+                pane.id = tabId;
+                pane.role = 'tabpanel';
+                
+                const modelsRow = document.createElement('div');
+                modelsRow.className = 'row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3';
+
+                typeModels.forEach(model => {
+                    const col = document.createElement('div');
+                    col.className = 'col';
+      
+                    const imageHtml = model.preview_url ? `
+                        <div class="card-img-container">
+                            <img 
+                                src="${model.preview_url.startsWith('/static') ? model.preview_url : '/static/images/' + model.preview_url.split('/').pop()}" 
+                                alt="${model.name}"
+                                onerror="this.onerror=null; this.src='${model.preview_url}';"
+                            >
+                        </div>` : '';
+      
+                    const content = `
+                        <div class="card h-100">
+                            ${imageHtml}
+                            <div class="card-body">
+                                <h5 class="card-title">${model.name}</h5>
+                                <p class="card-text">
+                                    <small class="d-block">类型: ${model.type}</small>
+                                    <small class="d-block">基础模型: ${model.baseModel || '未知'}</small>
+                                </p>
+                                ${model.url ? `<a href="${model.url}" class="btn btn-primary btn-sm" target="_blank">查看详情</a>` : ''}
+                            </div>
+                        </div>
+                    `;
+      
+                    col.innerHTML = content;
+                    modelsRow.appendChild(col);
+      
+                    // 同时添加到"全部"面板
+                    const allCol = col.cloneNode(true);
+                    allGrid.appendChild(allCol);
+                });
+
+                pane.appendChild(modelsRow);
+                modelTabContent.appendChild(pane);
+            });
+
+            // 添加"全部"面板
+            allPane.appendChild(allGrid);
+            modelTabContent.insertBefore(allPane, modelTabContent.firstChild);
+        }
+
         // 加载模型列表
         async function loadModels() {
             try {
-                const tabList = document.getElementById('modelTabs');
-                const tabContent = document.getElementById('modelTabContent');
-  
                 const response = await fetch(`${API_BASE}/models`);
-                const models = await response.json();
-  
-                // 按类型分组模型
-                const modelsByType = models.reduce((acc, model) => {
-                    const type = model.type || '未知';
-                    if (!acc[type]) {
-                        acc[type] = [];
-                    }
-                    acc[type].push(model);
-                    return acc;
-                }, {});
-  
-                // 清空现有标签和内容
-                tabList.innerHTML = '';
-                tabContent.innerHTML = '';
-                
-                // 创建"全部"标签
-                const allCount = models.length;
-                tabList.innerHTML = `
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
-                            全部 <span class="badge text-bg-secondary">${allCount}</span>
-                        </button>
-                    </li>
-                `;
-                
-                // 创建"全部"内容面板
-                const allPane = document.createElement('div');
-                allPane.className = 'tab-pane fade show active';
-                allPane.id = 'all';
-                allPane.role = 'tabpanel';
-                
-                const allGrid = document.createElement('div');
-                allGrid.className = 'row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3';
-  
-                // 按类型创建分组
-                Object.entries(modelsByType).forEach(([type, typeModels], index) => {
-                    // 创建标签
-                    const tabId = `type-${type.toLowerCase().replace(/\s+/g, '-')}`;
-                    const tab = document.createElement('li');
-                    tab.className = 'nav-item';
-                    tab.role = 'presentation';
-                    tab.innerHTML = `
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#${tabId}" type="button" role="tab">
-                            ${type} <span class="badge text-bg-secondary">${typeModels.length}</span>
-                        </button>
-                    `;
-                    tabList.appendChild(tab);
-  
-                    // 创建内容面板
-                    const pane = document.createElement('div');
-                    pane.className = 'tab-pane fade';
-                    pane.id = tabId;
-                    pane.role = 'tabpanel';
-                    
-                    const modelsRow = document.createElement('div');
-                    modelsRow.className = 'row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3';
-  
-                    typeModels.forEach(model => {
-                        const col = document.createElement('div');
-                        col.className = 'col';
-      
-                        const imageHtml = model.preview_url ? `
-                            <div class="card-img-container">
-                                <img 
-                                    src="${model.preview_url.startsWith('/static') ? model.preview_url : '/static/images/' + model.preview_url.split('/').pop()}" 
-                                    alt="${model.name}"
-                                    onerror="this.onerror=null; this.src='${model.preview_url}';"
-                                >
-                            </div>` : '';
-      
-                        const content = `
-                            <div class="card h-100">
-                                ${imageHtml}
-                                <div class="card-body">
-                                    <h5 class="card-title">${model.name}</h5>
-                                    <p class="card-text">
-                                        <small class="d-block">类型: ${model.type}</small>
-                                        <small class="d-block">基础模型: ${model.baseModel || '未知'}</small>
-                                    </p>
-                                    ${model.url ? `<a href="${model.url}" class="btn btn-primary btn-sm" target="_blank">查看详情</a>` : ''}
-                                </div>
-                            </div>
-                        `;
-      
-                        col.innerHTML = content;
-                        modelsRow.appendChild(col);
-      
-                        // 同时添加到"全部"面板
-                        const allCol = col.cloneNode(true);
-                        allGrid.appendChild(allCol);
-                    });
-  
-                    pane.appendChild(modelsRow);
-                    tabContent.appendChild(pane);
-                });
-  
-                // 添加"全部"面板
-                allPane.appendChild(allGrid);
-                tabContent.insertBefore(allPane, tabContent.firstChild);
+                allModels = await response.json();
+
+                // 更新筛选器选项
+                updateFilterOptions(allModels);
+
+                // 显示模型
+                displayModels(allModels);
             } catch (err) {
                 showError('加载模型列表失败');
             }
+        }
+
+        // 更新筛选器选项
+        function updateFilterOptions(models) {
+            // 获取所有基础模型
+            const baseModels = new Set(models.map(model => model.baseModel || '未知'));
+            const baseModelGroup = document.querySelector('[aria-label="基础模型筛选"]');
+            baseModelGroup.innerHTML = `
+                <button type="button" class="btn btn-outline-secondary" data-filter="baseModel" data-value="">
+                    <i class="bi bi-box"></i> 全部基础模型
+                </button>
+            `;
+
+            baseModels.forEach(baseModel => {
+                baseModelGroup.innerHTML += `
+                    <button type="button" class="btn btn-outline-secondary" data-filter="baseModel" data-value="${baseModel}">
+                        <i class="bi bi-box"></i> ${baseModel}
+                    </button>
+                `;
+            });
+
+            // 获取所有类型
+            const types = new Set(models.map(model => model.type || '未知'));
+            const typeGroup = document.querySelector('[aria-label="类型筛选"]');
+            typeGroup.innerHTML = `
+                <button type="button" class="btn btn-outline-secondary" data-filter="type" data-value="">
+                    <i class="bi bi-collection"></i> 全部类型
+                </button>
+            `;
+
+            types.forEach(type => {
+                typeGroup.innerHTML += `
+                    <button type="button" class="btn btn-outline-secondary" data-filter="type" data-value="${type}">
+                        <i class="bi bi-collection"></i> ${type}
+                    </button>
+                `;
+            });
+
+            // 重新添加事件监听
+            document.querySelectorAll('.btn-group button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const filter = e.target.dataset.filter;
+                    const value = e.target.dataset.value;
+                    
+                    // 处理"全部"按钮
+                    if (!value) {
+                        // 清除该组所有选中状态
+                        e.target.closest('.btn-group').querySelectorAll('button').forEach(btn => {
+                            btn.classList.remove('active');
+                        });
+                        currentFilters[filter].clear();
+                    } else {
+                        // 切换当前按钮状态
+                        e.target.classList.toggle('active');
+                        
+                        // 更新筛选条件
+                        if (e.target.classList.contains('active')) {
+                            currentFilters[filter].add(value);
+                        } else {
+                            currentFilters[filter].delete(value);
+                        }
+                        
+                        // 如果没有选中项，自动选中"全部"
+                        if (currentFilters[filter].size === 0) {
+                            const allButton = e.target.closest('.btn-group').querySelector('[data-value=""]');
+                            allButton.classList.add('active');
+                        } else {
+                            // 取消"全部"的选中状态
+                            const allButton = e.target.closest('.btn-group').querySelector('[data-value=""]');
+                            allButton.classList.remove('active');
+                        }
+                    }
+                    
+                    filterAndDisplayModels();
+                });
+            });
+        }
+
+        // 筛选并显示模型
+        function filterAndDisplayModels() {
+            let filteredModels = allModels;
+
+            // 应用基础模型筛选
+            if (currentFilters.baseModel.size > 0) {
+                filteredModels = filteredModels.filter(model => 
+                    currentFilters.baseModel.has(model.baseModel || '未知')
+                );
+            }
+
+            // 应用类型筛选
+            if (currentFilters.type.size > 0) {
+                filteredModels = filteredModels.filter(model => 
+                    currentFilters.type.has(model.type || '未知')
+                );
+            }
+
+            displayModels(filteredModels);
         }
 
         // 页面加载时初始化
