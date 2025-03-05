@@ -108,12 +108,8 @@
             </div>
         </div>
 
-        <!-- 标签页导航 -->
-        <ul class="nav nav-tabs" id="modelTabs" role="tablist">
-        </ul>
-        
-        <!-- 标签页内容 -->
-        <div class="tab-content pt-3" id="modelTabContent">
+        <!-- 模型列表 -->
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3" id="modelsList">
         </div>
     </div>
 
@@ -159,7 +155,7 @@
         // 监听 NSFW 开关
         nsfwToggle.addEventListener('change', (e) => {
             showNSFW = e.target.checked;
-            displayModels(allModels); // 重新显示模型列表
+            filterAndDisplayModels(); // 应用所有筛选条件
         });
 
         // 检查系统暗黑模式
@@ -290,110 +286,44 @@
 
         // 显示模型列表
         function displayModels(models) {
-            // 根据 NSFW 开关过滤模型
-            const filteredModels = showNSFW ? models : models.filter(model => !model.nsfw && model.nsfwLevel < 3);
+            // 清空现有内容
+            const modelsList = document.getElementById('modelsList');
+            modelsList.innerHTML = '';
             
-            // 按类型分组模型
-            const modelsByType = filteredModels.reduce((acc, model) => {
-                const type = model.type || '未知';
-                if (!acc[type]) {
-                    acc[type] = [];
-                }
-                acc[type].push(model);
-                return acc;
-            }, {});
-
-            // 清空现有标签和内容
-            modelTabs.innerHTML = '';
-            modelTabContent.innerHTML = '';
-            
-            // 创建"全部"标签
-            const allCount = models.length;
-            modelTabs.innerHTML = `
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
-                        全部 <span class="badge text-bg-secondary">${allCount}</span>
-                    </button>
-                </li>
-            `;
-            
-            // 创建"全部"内容面板
-            const allPane = document.createElement('div');
-            allPane.className = 'tab-pane fade show active';
-            allPane.id = 'all';
-            allPane.role = 'tabpanel';
-            
-            const allGrid = document.createElement('div');
-            allGrid.className = 'row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3';
-
-            // 按类型创建分组
-            Object.entries(modelsByType).forEach(([type, typeModels], index) => {
-                // 创建标签
-                const tabId = `type-${type.toLowerCase().replace(/\s+/g, '-')}`;
-                const tab = document.createElement('li');
-                tab.className = 'nav-item';
-                tab.role = 'presentation';
-                tab.innerHTML = `
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#${tabId}" type="button" role="tab">
-                        ${type} <span class="badge text-bg-secondary">${typeModels.length}</span>
-                    </button>
-                `;
-                modelTabs.appendChild(tab);
-
-                // 创建内容面板
-                const pane = document.createElement('div');
-                pane.className = 'tab-pane fade';
-                pane.id = tabId;
-                pane.role = 'tabpanel';
-                
-                const modelsRow = document.createElement('div');
-                modelsRow.className = 'row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3';
-
-                typeModels.forEach(model => {
-                    const col = document.createElement('div');
-                    col.className = 'col';
+            // 显示所有过滤后的模型
+            models.forEach(model => {
+                const col = document.createElement('div');
+                col.className = 'col';
       
-                    const imageHtml = model.preview_url ? `
-                        <div class="card-img-container">
-                            <img 
-                                src="${model.preview_url.startsWith('/static') ? model.preview_url : '/static/images/' + model.preview_url.split('/').pop()}" 
-                                alt="${model.name}"
-                                onerror="this.onerror=null; this.src='${model.preview_url}';"
-                            >
-                        </div>` : '';
+                const imageHtml = model.preview_url ? `
+                    <div class="card-img-container">
+                        <img 
+                            src="${model.preview_url.startsWith('/static') ? model.preview_url : '/static/images/' + model.preview_url.split('/').pop()}" 
+                            alt="${model.name}"
+                            onerror="this.onerror=null; this.src='${model.preview_url}';"
+                        >
+                    </div>` : '';
       
-                    const content = `
-                        <div class="card h-100">
-                            ${imageHtml}
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title mb-0">${model.name}</h5>
-                                    ${model.nsfw ? '<span class="badge text-bg-danger">NSFW</span>' : ''}
-                                </div>
-                                <p class="card-text">
-                                    <small class="d-block">类型: ${model.type}</small>
-                                    <small class="d-block">基础模型: ${model.baseModel || '未知'}</small>
-                                </p>
-                                ${model.url ? `<a href="${model.url}" class="btn btn-outline-primary btn-sm" target="_blank">查看详情</a>` : ''}
+                const content = `
+                    <div class="card h-100">
+                        ${imageHtml}
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">${model.name}</h5>
+                                ${model.nsfw ? '<span class="badge text-bg-danger">NSFW</span>' : ''}
                             </div>
+                            <p class="card-text">
+                                <small class="d-block">类型: ${model.type}</small>
+                                <small class="d-block">基础模型: ${model.baseModel || '未知'}</small>
+                            </p>
+                            ${model.url ? `<a href="${model.url}" class="btn btn-outline-primary btn-sm" target="_blank">查看详情</a>` : ''}
                         </div>
-                    `;
+                    </div>
+                `;
       
-                    col.innerHTML = content;
-                    modelsRow.appendChild(col);
-      
-                    // 同时添加到"全部"面板
-                    const allCol = col.cloneNode(true);
-                    allGrid.appendChild(allCol);
-                });
-
-                pane.appendChild(modelsRow);
-                modelTabContent.appendChild(pane);
+                col.innerHTML = content;
+                modelsList.appendChild(col);
             });
-
-            // 添加"全部"面板
-            allPane.appendChild(allGrid);
-            modelTabContent.insertBefore(allPane, modelTabContent.firstChild);
         }
 
         // 加载模型列表
