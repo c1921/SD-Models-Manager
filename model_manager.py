@@ -30,7 +30,9 @@ async def select_directory() -> str:
     """使用文件对话框选择目录"""
     root = tk.Tk()
     root.withdraw()  # 隐藏主窗口
+    root.attributes('-topmost', True)  # 确保对话框在最前面
     path = filedialog.askdirectory()
+    root.destroy()  # 完全清理 Tk 实例
     return path if path else ""
 
 class ModelManager:

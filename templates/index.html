@@ -63,7 +63,6 @@
                         </button>
                         <button class="btn btn-outline-primary" id="scanModels">扫描模型</button>
                     </div>
-                    <div class="form-text">请选择包含 Stable Diffusion 模型的目录</div>
                 </div>
             </div>
         </div>
@@ -182,31 +181,10 @@
                 const response = await fetch(`${API_BASE}/config`);
                 const config = await response.json();
                 if (config.models_path) {
-                    document.querySelector('.form-text').textContent = `当前目录: ${config.models_path}`;
+                    pathInput.value = config.models_path;
                 }
             } catch (err) {
                 showError('加载配置失败');
-            }
-        }
-
-        // 选择并保存路径
-        async function saveSelectedPath(path) {
-            try {
-                const response = await fetch(`${API_BASE}/path`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ path: path }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('路径无效');
-                }
-
-                loadModels();
-            } catch (err) {
-                showError(err.message);
             }
         }
 
@@ -228,6 +206,27 @@
                 showError('选择目录失败');
             }
         });
+
+        // 选择并保存路径
+        async function saveSelectedPath(path) {
+            try {
+                const response = await fetch(`${API_BASE}/path`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ path: path }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('路径无效');
+                }
+
+                loadModels();
+            } catch (err) {
+                showError(err.message);
+            }
+        }
 
         // 扫描模型
         scanModelsBtn.addEventListener('click', async () => {
