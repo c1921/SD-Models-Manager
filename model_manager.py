@@ -4,11 +4,16 @@ import requests
 from pathlib import Path
 import hashlib
 import argparse
-import yaml
-from nicegui import ui, app
 from typing import Dict, Any
-import asyncio
-from datetime import datetime
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, FileResponse
+from pydantic import BaseModel
+import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
+
+class PathUpdate(BaseModel):
+    path: str
 
 class ModelManager:
     def __init__(self, config_file="config.json"):
@@ -110,106 +115,85 @@ class ModelManager:
         
         return {
             "name": model_data.get("name", Path(model_path).name),
-            "hash": model_info.get("hash", "未知"),
             "type": model_data.get("type", "未知"),
             "preview_url": info.get("images", [{}])[0].get("url") if info.get("images") else None,
-            "description": model_data.get("description", "无描述"),
             "download_count": model_data.get("downloadCount", 0),
             "rating": model_data.get("rating", 0),
+            "url": f"https://civitai.com/models/{info['modelId']}?modelVersionId={info['id']}"
         }
 
-def create_ui(manager: ModelManager):
-    @ui.refreshable
-    def model_grid():
-        """可刷新的模型网格组件"""
-        with ui.grid(columns=3).classes('gap-4 p-4'):
-            for model_path, _ in manager.models_info.items():
-                model_info = manager.get_model_display_info(model_path)
-                with ui.card().classes('w-full'):
-                    if model_info['preview_url']:
-                        ui.image(model_info['preview_url']).classes('w-full h-48 object-cover')
-                    
-                    with ui.card_section():
-                        ui.label(model_info['name']).classes('text-h6')
-                        ui.label(f"类型: {model_info['type']}")
-                        ui.label(f"下载次数: {model_info['download_count']}")
-                        ui.label(f"评分: {model_info['rating']}")
-                        
-                    with ui.expansion('详细信息', icon='info'):
-                        ui.label(f"哈希值: {model_info['hash']}")
-                        ui.markdown(model_info['description'])
+    def get_all_models_info(self) -> list:
+        """获取所有模型的显示信息"""
+        return [
+            {
+                "path": model_path,
+                **self.get_model_display_info(model_path)
+            }
+            for model_path in self.models_info.keys()
+        ]
 
-    @ui.page('/')
-    def home():
-        # 添加亮暗模式切换开关，靠右并默认开启暗黑模式
-        dark = ui.dark_mode()
-        dark.enable()  # 确保在页面加载时启用暗色模式
-        
-        with ui.header().classes('bg-blue-600 text-white flex justify-between items-center'):
-            ui.label('Stable Diffusion 模型管理器').classes('text-h6')
-            switch = ui.switch('暗黑模式', value=True, on_change=lambda e: dark.enable() if e.value else dark.disable()).classes('ml-auto')
-        
-        with ui.row().classes('w-full p-4'):
-            path_input = ui.input(
-                label='模型目录路径', 
-                value='',
-                placeholder='请输入模型目录路径'
-            ).classes('w-96')
-            
-            async def save_path():
-                new_path = path_input.value
-                if not new_path:
-                    ui.notify('请输入有效的路径', color='warning')
-                    return
-                if not os.path.exists(new_path):
-                    ui.notify('路径不存在', color='negative')
-                    return
-                manager.update_models_path(new_path)
-                ui.notify('路径已保存', color='positive')
-                model_grid.refresh()
-            
-            ui.button('保存路径', on_click=save_path).classes('bg-green-500 text-white')
-            
-            loading_label = ui.label('').classes('text-blue-500')
-            refresh_btn = ui.button('刷新模型', on_click=None).classes('bg-blue-500 text-white')
-            
-            async def refresh_models():
-                if not manager.models_path or not os.path.exists(manager.models_path):
-                    ui.notify('请先设置有效的模型目录路径', color='warning')
-                    return
-                
-                refresh_btn.disable()
-                loading_label.text = '正在扫描模型...'
-                
-                try:
-                    await asyncio.to_thread(manager.scan_models)
-                    await asyncio.to_thread(manager.save_models_info)
-                    ui.notify('模型扫描完成')
-                    model_grid.refresh()  # 只刷新模型网格部分
-                finally:
-                    loading_label.text = ''
-                    refresh_btn.enable()
-            
-            refresh_btn.on_click(refresh_models)
-        
-        if not manager.models_path or not os.path.exists(manager.models_path):
-            ui.label('请先设置模型目录路径').classes('text-red-500 p-4')
-            return
-            
-        model_grid()  # 显示模型网格
+# 创建 FastAPI 应用
+app = FastAPI(title="Stable Diffusion 模型管理器")
+
+# 配置 CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 创建 ModelManager 实例
+manager = ModelManager()
+
+# 在创建 FastAPI 应用后添加
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/")
+async def read_root():
+    return FileResponse("templates/index.html")
+
+@app.get("/api/models")
+async def get_models():
+    """获取所有模型信息"""
+    return manager.get_all_models_info()
+
+@app.post("/api/path")
+async def update_path(path_update: PathUpdate):
+    """更新模型路径"""
+    if not os.path.exists(path_update.path):
+        raise HTTPException(status_code=400, detail="路径不存在")
+    manager.update_models_path(path_update.path)
+    return {"message": "路径已更新"}
+
+@app.post("/api/scan")
+async def scan_models():
+    """扫描模型"""
+    if not manager.models_path or not os.path.exists(manager.models_path):
+        raise HTTPException(status_code=400, detail="请先设置有效的模型目录路径")
+    try:
+        manager.scan_models()
+        manager.save_models_info()
+        return {"message": "模型扫描完成"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/config")
+async def get_config():
+    """获取当前配置"""
+    return {
+        "models_path": str(manager.models_path),
+        "is_path_valid": os.path.exists(manager.models_path) if manager.models_path else False
+    }
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='模型管理器')
     parser.add_argument('--port', type=int, default=8080, help='Web界面端口')
     args = parser.parse_args()
 
-    manager = ModelManager()
-    
     # 加载已有的模型信息
     manager.load_models_info()
     
-    # 创建Web界面
-    create_ui(manager)
-    
-    # 启动服务器
-    ui.run(port=args.port, reload=False) 
+    # 启动 FastAPI 服务器
+    uvicorn.run(app, host="127.0.0.1", port=args.port) 

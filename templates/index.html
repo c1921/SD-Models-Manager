@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stable Diffusion 模型管理器</title>
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --background-color: #f3f4f6;
+            --card-background: #ffffff;
+            --text-color: #1f2937;
+        }
+
+        body.dark-mode {
+            --background-color: #1f2937;
+            --card-background: #374151;
+            --text-color: #f3f4f6;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .controls {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .model-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .model-card {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .model-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .model-info {
+            padding: 1rem;
+        }
+
+        .model-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .error {
+            color: #ef4444;
+            padding: 1rem;
+            background-color: #fee2e2;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Stable Diffusion 模型管理器</h1>
+        <label>
+            <input type="checkbox" id="darkModeToggle"> 暗黑模式
+        </label>
+    </div>
+
+    <div class="container">
+        <div class="controls">
+            <div class="input-group">
+                <input type="text" id="pathInput" placeholder="请输入模型目录路径">
+            </div>
+            <button id="savePath">保存路径</button>
+            <button id="scanModels">扫描模型</button>
+        </div>
+
+        <div id="error" class="error" style="display: none;"></div>
+        <div id="loading" class="loading" style="display: none;">正在加载...</div>
+        <div id="modelGrid" class="model-grid"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        const pathInput = document.getElementById('pathInput');
+        const savePathBtn = document.getElementById('savePath');
+        const scanModelsBtn = document.getElementById('scanModels');
+        const modelGrid = document.getElementById('modelGrid');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+
+        // 暗黑模式切换
+        darkModeToggle.addEventListener('change', (e) => {
+            document.body.classList.toggle('dark-mode', e.target.checked);
+        });
+
+        // 显示错误信息
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+            setTimeout(() => {
+                error.style.display = 'none';
+            }, 3000);
+        }
+
+        // 加载配置
+        async function loadConfig() {
+            try {
+                const response = await fetch(`${API_BASE}/config`);
+                const config = await response.json();
+                pathInput.value = config.models_path;
+            } catch (err) {
+                showError('加载配置失败');
+            }
+        }
+
+        // 保存路径
+        savePathBtn.addEventListener('click', async () => {
+            const path = pathInput.value;
+            if (!path) {
+                showError('请输入有效的路径');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/path`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ path }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('路径无效');
+                }
+
+                loadModels();
+            } catch (err) {
+                showError(err.message);
+            }
+        });
+
+        // 扫描模型
+        scanModelsBtn.addEventListener('click', async () => {
+            try {
+                scanModelsBtn.disabled = true;
+                loading.style.display = 'block';
+
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                });
+
+                if (!response.ok) {
+                    throw new Error('扫描失败');
+                }
+
+                await loadModels();
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                scanModelsBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        // 加载模型列表
+        async function loadModels() {
+            try {
+                loading.style.display = 'block';
+                modelGrid.innerHTML = '';
+
+                const response = await fetch(`${API_BASE}/models`);
+                const models = await response.json();
+
+                models.forEach(model => {
+                    const card = document.createElement('div');
+                    card.className = 'model-card';
+
+                    const content = `
+                        ${model.preview_url ? `<img src="${model.preview_url}" class="model-image" alt="${model.name}">` : ''}
+                        <div class="model-info">
+                            <div class="model-name">${model.name}</div>
+                            <div>类型: ${model.type}</div>
+                            <div>下载次数: ${model.download_count}</div>
+                            <div>评分: ${model.rating}</div>
+                            ${model.url ? `<a href="${model.url}" target="_blank">查看详情</a>` : ''}
+                        </div>
+                    `;
+
+                    card.innerHTML = content;
+                    modelGrid.appendChild(card);
+                });
+            } catch (err) {
+                showError('加载模型列表失败');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // 页面加载时初始化
+        loadConfig();
+        loadModels();
+    </script>
+</body>
+</html> 
