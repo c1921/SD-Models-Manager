@@ -7,7 +7,7 @@ import argparse
 from typing import Dict, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +15,8 @@ import aiohttp
 import aiofiles
 from urllib.parse import urlparse
 import time
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 class PathUpdate(BaseModel):
     path: str
@@ -28,6 +30,7 @@ class ModelManager:
         self.models_info: Dict[str, Any] = {}
         self.images_path = Path("static/images")  # 添加图片保存路径
         self.images_path.mkdir(parents=True, exist_ok=True)  # 确保目录存在
+        self.thread_pool = ThreadPoolExecutor()
         
     def load_config(self) -> dict:
         """加载配置文件"""
@@ -55,6 +58,11 @@ class ModelManager:
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
     
+    async def calculate_model_hash_async(self, file_path):
+        """异步计算模型文件的哈希值"""
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(self.thread_pool, self.calculate_model_hash, file_path)
+    
     def _get_file_mtime(self, file_path: Path) -> float:
         """获取文件的修改时间戳"""
         return os.path.getmtime(file_path)
@@ -69,6 +77,8 @@ class ModelManager:
             return
         
         print(f"找到 {len(safetensors_files)} 个模型文件")
+        total = len(safetensors_files)
+        processed = 0
         
         for file_path in safetensors_files:
             print(f"\n处理文件: {file_path.name}")
@@ -79,14 +89,20 @@ class ModelManager:
                 # 检查文件是否已经扫描过且未修改
                 if existing_info and existing_info.get("info", {}).get("mtime") == current_mtime:
                     print(f"文件 {file_path.name} 未修改，跳过扫描")
+                    processed += 1
+                    yield f"data: {json.dumps({'progress': processed / total, 'message': f'跳过: {file_path.name}'})}\n\n"
                     continue
                 
-                model_hash = self.calculate_model_hash(file_path)
+                model_hash = await self.calculate_model_hash_async(file_path)
                 print(f"计算得到哈希值: {model_hash}")
                 await self.fetch_model_info(model_hash, file_path, current_mtime)
                 self.save_models_info()  # 每次获取新信息后保存
+                processed += 1
+                yield f"data: {json.dumps({'progress': processed / total, 'message': f'已处理: {file_path.name}'})}\n\n"
             except Exception as e:
                 print(f"处理文件 {file_path.name} 时发生错误: {str(e)}")
+                processed += 1
+                yield f"data: {json.dumps({'progress': processed / total, 'message': f'错误: {file_path.name}'})}\n\n"
             
     async def fetch_model_info(self, model_hash, file_path, mtime: float):
         """从Civitai API获取模型信息并下载预览图"""
@@ -251,14 +267,16 @@ async def update_path(path_update: PathUpdate):
     manager.update_models_path(path_update.path)
     return {"message": "路径已更新"}
 
-@app.post("/api/scan")
-async def scan_models():
+@app.get("/api/scan")
+async def scan_models_endpoint():
     """扫描模型"""
     if not manager.models_path or not os.path.exists(manager.models_path):
         raise HTTPException(status_code=400, detail="请先设置有效的模型目录路径")
     try:
-        await manager.scan_models()
-        return {"message": "模型扫描完成"}
+        return StreamingResponse(
+            manager.scan_models(),
+            media_type="text/event-stream"
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
