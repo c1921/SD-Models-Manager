@@ -227,11 +227,14 @@ class ModelManager:
                 "preview_url": None,
                 "description": "未找到模型信息",
                 "baseModel": "未知",
+                "nsfw": False,
+                "nsfwLevel": 0,
             }
         
         info = model_info.get("info", {})
         model_data = info.get("model", {})
-        preview_url = info.get("images", [{}])[0].get("url") if info.get("images") else None
+        preview_image = info.get("images", [{}])[0] if info.get("images") else {}
+        preview_url = preview_image.get("url")
         
         # 添加本地图片路径
         local_preview = info.get("local_preview")
@@ -239,9 +242,11 @@ class ModelManager:
         return {
             "name": model_data.get("name", Path(model_path).name),
             "type": model_data.get("type", "未知"),
-            "preview_url": local_preview or preview_url,  # 优先使用本地路径
+            "preview_url": local_preview or preview_url,
             "baseModel": info.get("baseModel", "未知"),
-            "url": f"https://civitai.com/models/{info['modelId']}?modelVersionId={info['id']}"
+            "url": f"https://civitai.com/models/{info['modelId']}?modelVersionId={info['id']}",
+            "nsfw": model_data.get("nsfw", False),
+            "nsfwLevel": preview_image.get("nsfwLevel", 0),
         }
 
     def get_all_models_info(self) -> list:

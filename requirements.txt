@@ -1,8 +1,6 @@
 fastapi
 uvicorn
 requests
-python-multipart
-pydantic
 aiohttp
 aiofiles
 pyinstaller
