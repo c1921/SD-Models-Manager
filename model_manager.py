@@ -11,6 +11,9 @@ from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
+import aiohttp
+import aiofiles
+from urllib.parse import urlparse
 
 class PathUpdate(BaseModel):
     path: str
@@ -22,6 +25,8 @@ class ModelManager:
         self.models_path = Path(self.config.get("models_path", ""))
         self.api_base_url = "https://civitai.com/api/v1"
         self.models_info: Dict[str, Any] = {}
+        self.images_path = Path("static/images")  # 添加图片保存路径
+        self.images_path.mkdir(parents=True, exist_ok=True)  # 确保目录存在
         
     def load_config(self) -> dict:
         """加载配置文件"""
@@ -69,12 +74,20 @@ class ModelManager:
             except Exception as e:
                 print(f"处理文件 {file_path.name} 时发生错误: {str(e)}")
             
-    def fetch_model_info(self, model_hash, file_path):
-        """从Civitai API获取模型信息"""
+    async def fetch_model_info(self, model_hash, file_path):
+        """从Civitai API获取模型信息并下载预览图"""
         try:
             response = requests.get(f"{self.api_base_url}/model-versions/by-hash/{model_hash}")
             if response.status_code == 200:
                 model_info = response.json()
+                
+                # 下载预览图
+                preview_url = model_info.get("images", [{}])[0].get("url")
+                if preview_url:
+                    local_preview = await self.download_image(preview_url)
+                    if local_preview:
+                        model_info["local_preview"] = local_preview
+                
                 self.models_info[str(file_path)] = {
                     "hash": model_hash,
                     "info": model_info
@@ -96,6 +109,32 @@ class ModelManager:
             with open(input_file, "r", encoding="utf-8") as f:
                 self.models_info = json.load(f)
 
+    async def download_image(self, url: str) -> str:
+        """下载图片并返回本地路径"""
+        if not url:
+            return None
+            
+        # 从URL中提取文件名
+        filename = Path(urlparse(url).path).name
+        local_path = self.images_path / filename
+        
+        # 如果文件已存在，直接返回路径
+        if local_path.exists():
+            return f"/static/images/{filename}"
+            
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        async with aiofiles.open(local_path, 'wb') as f:
+                            await f.write(await response.read())
+                        return f"/static/images/{filename}"
+        except Exception as e:
+            print(f"下载图片失败: {url}, 错误: {str(e)}")
+            return None
+            
+        return None
+
     def get_model_display_info(self, model_path: str) -> dict:
         """获取用于显示的模型信息"""
         model_info = self.models_info.get(model_path, {})
@@ -112,11 +151,15 @@ class ModelManager:
         
         info = model_info.get("info", {})
         model_data = info.get("model", {})
+        preview_url = info.get("images", [{}])[0].get("url") if info.get("images") else None
+        
+        # 添加本地图片路径
+        local_preview = model_info.get("local_preview")
         
         return {
             "name": model_data.get("name", Path(model_path).name),
             "type": model_data.get("type", "未知"),
-            "preview_url": info.get("images", [{}])[0].get("url") if info.get("images") else None,
+            "preview_url": local_preview or preview_url,  # 优先使用本地路径
             "download_count": model_data.get("downloadCount", 0),
             "rating": model_data.get("rating", 0),
             "url": f"https://civitai.com/models/{info['modelId']}?modelVersionId={info['id']}"
@@ -173,7 +216,12 @@ async def scan_models():
     if not manager.models_path or not os.path.exists(manager.models_path):
         raise HTTPException(status_code=400, detail="请先设置有效的模型目录路径")
     try:
-        manager.scan_models()
+        safetensors_files = list(manager.models_path.rglob("*.safetensors"))
+        
+        for file_path in safetensors_files:
+            model_hash = manager.calculate_model_hash(file_path)
+            await manager.fetch_model_info(model_hash, file_path)
+            
         manager.save_models_info()
         return {"message": "模型扫描完成"}
     except Exception as e:

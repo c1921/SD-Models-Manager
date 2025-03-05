@@ -238,8 +238,16 @@
                     const card = document.createElement('div');
                     card.className = 'model-card';
 
+                    const imageHtml = model.preview_url ? `
+                        <img 
+                            src="${model.preview_url.startsWith('/static') ? model.preview_url : '/static/images/' + model.preview_url.split('/').pop()}" 
+                            class="model-image" 
+                            alt="${model.name}"
+                            onerror="this.onerror=null; this.src='${model.preview_url}';"
+                        >` : '';
+
                     const content = `
-                        ${model.preview_url ? `<img src="${model.preview_url}" class="model-image" alt="${model.name}">` : ''}
+                        ${imageHtml}
                         <div class="model-info">
                             <div class="model-name">${model.name}</div>
                             <div>类型: ${model.type}</div>

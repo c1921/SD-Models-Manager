@@ -68,3 +68,6 @@ dmypy.json
 
 config.json
 models_info.json
+
+static/images/*
+!static/images/.gitkeep
