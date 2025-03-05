@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import aiohttp
 import aiofiles
 from urllib.parse import urlparse
+import time
 
 class PathUpdate(BaseModel):
     path: str
@@ -54,7 +55,11 @@ class ModelManager:
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
     
-    def scan_models(self):
+    def _get_file_mtime(self, file_path: Path) -> float:
+        """获取文件的修改时间戳"""
+        return os.path.getmtime(file_path)
+    
+    async def scan_models(self):
         """扫描指定目录下的所有.safetensors文件"""
         print(f"开始扫描目录: {self.models_path}")
         safetensors_files = list(self.models_path.rglob("*.safetensors"))
@@ -68,13 +73,22 @@ class ModelManager:
         for file_path in safetensors_files:
             print(f"\n处理文件: {file_path.name}")
             try:
+                current_mtime = self._get_file_mtime(file_path)
+                existing_info = self.models_info.get(str(file_path), {})
+                
+                # 检查文件是否已经扫描过且未修改
+                if existing_info and existing_info.get("info", {}).get("mtime") == current_mtime:
+                    print(f"文件 {file_path.name} 未修改，跳过扫描")
+                    continue
+                
                 model_hash = self.calculate_model_hash(file_path)
                 print(f"计算得到哈希值: {model_hash}")
-                self.fetch_model_info(model_hash, file_path)
+                await self.fetch_model_info(model_hash, file_path, current_mtime)
+                self.save_models_info()  # 每次获取新信息后保存
             except Exception as e:
                 print(f"处理文件 {file_path.name} 时发生错误: {str(e)}")
             
-    async def fetch_model_info(self, model_hash, file_path):
+    async def fetch_model_info(self, model_hash, file_path, mtime: float):
         """从Civitai API获取模型信息并下载预览图"""
         try:
             response = requests.get(f"{self.api_base_url}/model-versions/by-hash/{model_hash}")
@@ -86,7 +100,12 @@ class ModelManager:
                 if preview_url:
                     local_preview = await self.download_image(preview_url)
                     if local_preview:
-                        model_info["local_preview"] = local_preview
+                        model_info = {
+                            **model_info,
+                            "local_preview": local_preview,
+                            "mtime": mtime,  # 记录文件修改时间
+                            "scan_time": time.time()  # 记录扫描时间
+                        }
                 
                 self.models_info[str(file_path)] = {
                     "hash": model_hash,
@@ -177,7 +196,7 @@ class ModelManager:
         preview_url = info.get("images", [{}])[0].get("url") if info.get("images") else None
         
         # 添加本地图片路径
-        local_preview = model_info.get("local_preview")
+        local_preview = info.get("local_preview")
         
         return {
             "name": model_data.get("name", Path(model_path).name),
@@ -238,13 +257,7 @@ async def scan_models():
     if not manager.models_path or not os.path.exists(manager.models_path):
         raise HTTPException(status_code=400, detail="请先设置有效的模型目录路径")
     try:
-        safetensors_files = list(manager.models_path.rglob("*.safetensors"))
-        
-        for file_path in safetensors_files:
-            model_hash = manager.calculate_model_hash(file_path)
-            await manager.fetch_model_info(model_hash, file_path)
-            
-        manager.save_models_info()
+        await manager.scan_models()
         return {"message": "模型扫描完成"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
