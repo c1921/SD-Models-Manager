@@ -84,7 +84,15 @@ class ModelManager:
     async def scan_models(self):
         """扫描指定目录下的所有.safetensors文件"""
         print(f"开始扫描目录: {self.models_path}")
-        safetensors_files = list(self.models_path.rglob("*.safetensors"))
+        
+        # 只扫描 checkpoints 和 loras 文件夹
+        allowed_folders = ['checkpoints', 'loras']
+        safetensors_files = []
+        
+        for folder in allowed_folders:
+            folder_path = self.models_path / folder
+            if folder_path.exists():
+                safetensors_files.extend(list(folder_path.rglob("*.safetensors")))
         
         if not safetensors_files:
             print("未找到任何.safetensors文件")
