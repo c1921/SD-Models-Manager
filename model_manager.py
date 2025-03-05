@@ -108,6 +108,30 @@ class ModelManager:
         if os.path.exists(input_file):
             with open(input_file, "r", encoding="utf-8") as f:
                 self.models_info = json.load(f)
+            # 清理不存在的模型
+            self._clean_nonexistent_models()
+
+    def _clean_nonexistent_models(self):
+        """清理不存在的模型信息"""
+        to_remove = []
+        for model_path in self.models_info.keys():
+            if not os.path.exists(model_path):
+                to_remove.append(model_path)
+                # 清理相关的本地图片
+                model_info = self.models_info[model_path]
+                if "local_preview" in model_info.get("info", {}):
+                    image_path = Path("static") / model_info["info"]["local_preview"].lstrip("/static/")
+                    if image_path.exists():
+                        image_path.unlink()
+        
+        # 从字典中移除不存在的模型
+        for path in to_remove:
+            del self.models_info[path]
+        
+        # 如果有清理，保存更新后的信息
+        if to_remove:
+            self.save_models_info()
+            print(f"已清理 {len(to_remove)} 个不存在的模型")
 
     async def download_image(self, url: str) -> str:
         """下载图片并返回本地路径"""
