@@ -39,7 +39,7 @@ class ModelManager:
     def __init__(self, config_file="config.json"):
         self.config_file = config_file
         self.config = self.load_config()
-        self.models_path = Path(self.config.get("models_path", ""))
+        self.models_path = Path(self.config.get("models_path", "")) if self.config.get("models_path") else None
         self.api_base_url = "https://civitai.com/api/v1"
         self.models_info: Dict[str, Any] = {}
         self.images_path = Path("static/images")  # 添加图片保存路径
@@ -304,7 +304,7 @@ async def scan_models_endpoint():
 async def get_config():
     """获取当前配置"""
     return {
-        "models_path": str(manager.models_path),
+        "models_path": str(manager.models_path) if manager.models_path else "",
         "is_path_valid": os.path.exists(manager.models_path) if manager.models_path else False
     }
 
