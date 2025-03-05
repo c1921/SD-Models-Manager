@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,13 +40,13 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <span class="navbar-brand">Stable Diffusion 模型管理器</span>
-            <div class="form-check form-switch ms-auto">
-                <input class="form-check-input" type="checkbox" id="darkModeToggle">
-                <label class="form-check-label text-white" for="darkModeToggle">暗黑模式</label>
-            </div>
+            <button class="btn btn-outline ms-auto" id="darkModeToggle">
+                <i class="bi bi-sun-fill" id="lightIcon"></i>
+                <i class="bi bi-moon-stars-fill d-none" id="darkIcon"></i>
+            </button>
         </div>
     </nav>
 
@@ -55,8 +55,8 @@
             <div class="col">
                 <div class="input-group">
                     <input type="text" class="form-control" id="pathInput" placeholder="请输入模型目录路径">
-                    <button class="btn btn-success" id="savePath">保存路径</button>
-                    <button class="btn btn-primary" id="scanModels">扫描模型</button>
+                    <button class="btn btn-outline-success" id="savePath">保存路径</button>
+                    <button class="btn btn-outline-primary" id="scanModels">扫描模型</button>
                 </div>
             </div>
         </div>
@@ -76,17 +76,25 @@
 
         <!-- 筛选按钮组 -->
         <div class="d-flex flex-wrap gap-2 mb-3">
-            <!-- 基础模型筛选 -->
-            <div class="btn-group me-2" role="group" aria-label="基础模型筛选">
-                <button type="button" class="btn btn-outline-secondary active" data-filter="baseModel" data-value="">
-                    <i class="bi bi-box"></i> 全部基础模型
+            <!-- 基础模型筛选标题 -->
+            <div class="d-flex align-items-center me-2">
+                <small class="text-muted">基础模型:</small>
+            </div>
+            <!-- 基础模型筛选按钮 -->
+            <div class="d-flex flex-wrap gap-2 me-4" id="baseModelFilters">
+                <button type="button" class="btn btn-outline-secondary" data-filter="baseModel" data-value="">
+                    全部
                 </button>
             </div>
 
-            <!-- 类型筛选 -->
-            <div class="btn-group" role="group" aria-label="类型筛选">
-                <button type="button" class="btn btn-outline-secondary active" data-filter="type" data-value="">
-                    <i class="bi bi-collection"></i> 全部类型
+            <!-- 类型筛选标题 -->
+            <div class="d-flex align-items-center me-2">
+                <small class="text-muted">类型:</small>
+            </div>
+            <!-- 类型筛选按钮 -->
+            <div class="d-flex flex-wrap gap-2" id="typeFilters">
+                <button type="button" class="btn btn-outline-secondary" data-filter="type" data-value="">
+                    全部
                 </button>
             </div>
         </div>
@@ -124,6 +132,8 @@
         const loading = document.getElementById('loading');
         const error = document.getElementById('error');
         const darkModeToggle = document.getElementById('darkModeToggle');
+        const lightIcon = document.getElementById('lightIcon');
+        const darkIcon = document.getElementById('darkIcon');
         const scanCompleteToast = new bootstrap.Toast(document.getElementById('scanCompleteToast'));
 
         // 存储所有模型数据
@@ -134,14 +144,20 @@
         };
 
         // 检查系统暗黑模式
+        function updateDarkModeUI(isDark) {
+            document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
+            lightIcon.classList.toggle('d-none', isDark);
+            darkIcon.classList.toggle('d-none', !isDark);
+        }
+
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            darkModeToggle.checked = true;
-            document.body.setAttribute('data-bs-theme', 'dark');
+            updateDarkModeUI(true);
         }
 
         // 暗黑模式切换
-        darkModeToggle.addEventListener('change', (e) => {
-            document.body.setAttribute('data-bs-theme', e.target.checked ? 'dark' : 'light');
+        darkModeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.getAttribute('data-bs-theme') !== 'dark';
+            updateDarkModeUI(isDark);
         });
 
         // 显示错误信息
@@ -360,40 +376,40 @@
         function updateFilterOptions(models) {
             // 获取所有基础模型
             const baseModels = new Set(models.map(model => model.baseModel || '未知'));
-            const baseModelGroup = document.querySelector('[aria-label="基础模型筛选"]');
+            const baseModelGroup = document.getElementById('baseModelFilters');
             baseModelGroup.innerHTML = `
                 <button type="button" class="btn btn-outline-secondary" data-filter="baseModel" data-value="">
-                    <i class="bi bi-box"></i> 全部基础模型
+                    全部
                 </button>
             `;
 
             baseModels.forEach(baseModel => {
                 baseModelGroup.innerHTML += `
                     <button type="button" class="btn btn-outline-secondary" data-filter="baseModel" data-value="${baseModel}">
-                        <i class="bi bi-box"></i> ${baseModel}
+                        ${baseModel}
                     </button>
                 `;
             });
 
             // 获取所有类型
             const types = new Set(models.map(model => model.type || '未知'));
-            const typeGroup = document.querySelector('[aria-label="类型筛选"]');
+            const typeGroup = document.getElementById('typeFilters');
             typeGroup.innerHTML = `
                 <button type="button" class="btn btn-outline-secondary" data-filter="type" data-value="">
-                    <i class="bi bi-collection"></i> 全部类型
+                    全部
                 </button>
             `;
 
             types.forEach(type => {
                 typeGroup.innerHTML += `
                     <button type="button" class="btn btn-outline-secondary" data-filter="type" data-value="${type}">
-                        <i class="bi bi-collection"></i> ${type}
+                        ${type}
                     </button>
                 `;
             });
 
             // 重新添加事件监听
-            document.querySelectorAll('.btn-group button').forEach(button => {
+            document.querySelectorAll('#baseModelFilters button, #typeFilters button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const filter = e.target.dataset.filter;
                     const value = e.target.dataset.value;
@@ -401,13 +417,24 @@
                     // 处理"全部"按钮
                     if (!value) {
                         // 清除该组所有选中状态
-                        e.target.closest('.btn-group').querySelectorAll('button').forEach(btn => {
+                        e.target.closest('div').querySelectorAll('button').forEach(btn => {
                             btn.classList.remove('active');
+                            btn.classList.remove('btn-success');
+                            btn.classList.add('btn-outline-secondary');
                         });
                         currentFilters[filter].clear();
+                        e.target.classList.add('active', 'btn-success');
+                        e.target.classList.remove('btn-outline-secondary');
                     } else {
                         // 切换当前按钮状态
                         e.target.classList.toggle('active');
+                        if (e.target.classList.contains('active')) {
+                            e.target.classList.remove('btn-outline-secondary');
+                            e.target.classList.add('btn-success');
+                        } else {
+                            e.target.classList.remove('btn-success');
+                            e.target.classList.add('btn-outline-secondary');
+                        }
                         
                         // 更新筛选条件
                         if (e.target.classList.contains('active')) {
@@ -418,12 +445,16 @@
                         
                         // 如果没有选中项，自动选中"全部"
                         if (currentFilters[filter].size === 0) {
-                            const allButton = e.target.closest('.btn-group').querySelector('[data-value=""]');
+                            const allButton = e.target.closest('div').querySelector('[data-value=""]');
                             allButton.classList.add('active');
+                            allButton.classList.add('btn-success');
+                            allButton.classList.remove('btn-outline-secondary');
                         } else {
                             // 取消"全部"的选中状态
-                            const allButton = e.target.closest('.btn-group').querySelector('[data-value=""]');
+                            const allButton = e.target.closest('div').querySelector('[data-value=""]');
                             allButton.classList.remove('active');
+                            allButton.classList.remove('btn-success');
+                            allButton.classList.add('btn-outline-secondary');
                         }
                     }
                     
