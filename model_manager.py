@@ -17,6 +17,9 @@ from urllib.parse import urlparse
 import time
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import webbrowser
+import threading
+import socket
 
 class PathUpdate(BaseModel):
     path: str
@@ -254,6 +257,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def read_root():
     return FileResponse("templates/index.html")
 
+@app.get("/favicon.svg")
+async def get_favicon():
+    return FileResponse("templates/favicon.svg")
+
 @app.get("/api/models")
 async def get_models():
     """获取所有模型信息"""
@@ -288,13 +295,39 @@ async def get_config():
         "is_path_valid": os.path.exists(manager.models_path) if manager.models_path else False
     }
 
+def find_free_port(start_port=8080, max_tries=100):
+    """查找可用的端口号"""
+    for port in range(start_port, start_port + max_tries):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('127.0.0.1', port))
+                return port
+        except OSError:
+            continue
+    raise RuntimeError('无法找到可用的端口')
+
+def open_browser(port: int):
+    """延迟一秒后打开浏览器"""
+    time.sleep(1)
+    webbrowser.open(f'http://127.0.0.1:{port}')
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='模型管理器')
-    parser.add_argument('--port', type=int, default=8080, help='Web界面端口')
+    parser.add_argument('--port', type=int, default=None, help='Web界面端口')
     args = parser.parse_args()
+
+    # 获取可用端口
+    port = args.port or find_free_port()
 
     # 加载已有的模型信息
     manager.load_models_info()
     
+    # 在新线程中打开浏览器
+    threading.Thread(target=open_browser, args=(port,), daemon=True).start()
+    
     # 启动 FastAPI 服务器
-    uvicorn.run(app, host="127.0.0.1", port=args.port) 
+    uvicorn.run(
+        app, 
+        host="127.0.0.1", 
+        port=port
+    ) 
