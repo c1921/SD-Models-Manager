@@ -145,8 +145,7 @@ class ModelManager:
                 "type": "未知",
                 "preview_url": None,
                 "description": "未找到模型信息",
-                "download_count": 0,
-                "rating": 0,
+                "baseModel": "未知",
             }
         
         info = model_info.get("info", {})
@@ -160,8 +159,7 @@ class ModelManager:
             "name": model_data.get("name", Path(model_path).name),
             "type": model_data.get("type", "未知"),
             "preview_url": local_preview or preview_url,  # 优先使用本地路径
-            "download_count": model_data.get("downloadCount", 0),
-            "rating": model_data.get("rating", 0),
+            "baseModel": info.get("baseModel", "未知"),
             "url": f"https://civitai.com/models/{info['modelId']}?modelVersionId={info['id']}"
         }
 
