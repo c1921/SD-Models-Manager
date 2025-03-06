@@ -70,3 +70,5 @@ config.json
 models_info.json
 
 static/images/
+
+version_info.txt
