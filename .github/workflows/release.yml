@@ -28,11 +28,22 @@ jobs:
         
     - name: Build with PyInstaller
       run: python build.py
+      
+    - name: Create ZIP archive
+      run: |
+        cd dist
+        $VERSION = (Get-Item "SD_Models_Manager_v*.exe").BaseName
+        New-Item -ItemType Directory -Path "$VERSION"
+        Move-Item "SD_Prompt_Manager_v*.exe" "$VERSION"
+        Move-Item "templates" "$VERSION"
+        Move-Item "static" "$VERSION"
+        Compress-Archive -Path "$VERSION" -DestinationPath "$VERSION.zip"
         
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: dist/SD_Prompt_Manager_v*.exe
+        files: |
+          dist/SD_Models_Manager_v*.zip
         draft: false
         prerelease: false
       env:
