@@ -41,22 +41,28 @@
     </style>
 </head>
 <body>
-    <nav class="navbar bg-body-tertiary navbar-expand-lg sticky-top">
+    <nav class="navbar bg-body-secondary navbar-expand-lg sticky-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
                 <img src="../static/favicon.svg" alt="Stable Diffusion 模型管理器" height="26">
             </a>
-            <button class="btn btn-outline-secondary ms-auto" data-bs-toggle="modal" data-bs-target="#settingsModal">
-                <i class="bi bi-gear"></i>
-                <span class="ms-1">设置</span>
-            </button>
-            <button class="btn btn-outline-success ms-3" id="nsfwToggle">
+            
+            <button class="btn btn-outline-success ms-auto" id="nsfwToggle">
                 <i class="bi bi-eye-slash-fill" id="nsfwIcon"></i>
                 <span class="ms-1" id="nsfwText">NSFW 已关闭</span>
             </button>
+
+            <button class="btn btn-outline-secondary ms-3" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                <i class="bi bi-gear"></i>
+                <span class="ms-1">设置</span>
+            </button>
+
             <button class="btn btn-outline ms-3" id="darkModeToggle">
                 <i class="bi bi-sun-fill" id="lightIcon"></i>
                 <i class="bi bi-moon-stars-fill d-none" id="darkIcon"></i>
+            </button>
+            <button class="btn btn-outline-secondary ms-3 d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterSidebar">
+                <i class="bi bi-funnel-fill"></i>
             </button>
         </div>
     </nav>
@@ -88,48 +94,92 @@
         </div>
     </div>
 
-    <div class="container mt-4">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 主内容区 -->
+            <div class="col">
+                <div class="container mt-4">
+                    <div class="alert alert-danger d-none" id="error" role="alert"></div>
+                    <div class="text-center d-none" id="loading">
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" 
+                                 style="width: 0%" 
+                                 aria-valuenow="0" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">0%</div>
+                        </div>
+                        <div class="text-muted" id="progressMessage"></div>
+                    </div>
 
-        <div class="alert alert-danger d-none" id="error" role="alert"></div>
-        <div class="text-center d-none" id="loading">
-            <div class="progress mb-2" style="height: 20px;">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                     role="progressbar" 
-                     style="width: 0%" 
-                     aria-valuenow="0" 
-                     aria-valuemin="0" 
-                     aria-valuemax="100">0%</div>
+                    <!-- 模型列表 -->
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3 pb-5" id="modelsList">
+                    </div>
+                </div>
             </div>
-            <div class="text-muted" id="progressMessage"></div>
+
+            <!-- 侧边栏 -->
+            <div class="col-auto border-start bg-body-tertiary d-none d-lg-block" style="width: 25%;">
+                <div class="d-flex flex-column position-sticky p-3" style="top: 56px; max-height: calc(100vh - 56px); overflow-y: auto;">
+                    <div class="d-flex align-items-center pb-3 mb-3 border-bottom">
+                        <span class="fs-5 fw-semibold">筛选器</span>
+                    </div>
+                    <!-- 基础模型筛选 -->
+                    <div class="mb-3">
+                        <div class="nav flex-column">
+                            <div class="nav-item">
+                                <span class="nav-link text-secondary small mb-2">基础模型</span>
+                                <div class="d-flex flex-wrap gap-2" id="baseModelFilters">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 类型筛选 -->
+                    <div class="mb-3">
+                        <div class="nav flex-column">
+                            <div class="nav-item">
+                                <span class="nav-link text-secondary small mb-2">类型</span>
+                                <div class="d-flex flex-wrap gap-2" id="typeFilters">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
 
-        <!-- 筛选按钮组 -->
-        <div class="d-flex flex-wrap gap-2 mb-3">
-            <!-- 基础模型筛选标题 -->
-            <div class="d-flex align-items-center me-2">
-                <small class="text-muted">基础模型:</small>
-            </div>
-            <!-- 基础模型筛选按钮 -->
-            <div class="d-flex flex-wrap gap-2 me-4" id="baseModelFilters">
-                <button type="button" class="btn btn-outline-secondary" data-filter="baseModel" data-value="">
-                    全部
-                </button>
-            </div>
-
-            <!-- 类型筛选标题 -->
-            <div class="d-flex align-items-center me-2">
-                <small class="text-muted">类型:</small>
-            </div>
-            <!-- 类型筛选按钮 -->
-            <div class="d-flex flex-wrap gap-2" id="typeFilters">
-                <button type="button" class="btn btn-outline-secondary" data-filter="type" data-value="">
-                    全部
-                </button>
-            </div>
+    <!-- 画布外侧边栏 -->
+    <div class="offcanvas offcanvas-end d-lg-none" tabindex="-1" id="filterSidebar" aria-labelledby="filterSidebarLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="filterSidebarLabel">筛选器</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#filterSidebar" aria-label="Close"></button>
         </div>
+        <div class="offcanvas-body">
+            <!-- 基础模型筛选 -->
+            <div class="mb-3">
+                <div class="nav flex-column">
+                    <div class="nav-item">
+                        <span class="nav-link text-secondary small mb-2">基础模型</span>
+                        <div class="d-flex flex-wrap gap-2" id="baseModelFiltersMobile">
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- 模型列表 -->
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3 pb-5" id="modelsList">
+            <!-- 类型筛选 -->
+            <div class="mb-3">
+                <div class="nav flex-column">
+                    <div class="nav-item">
+                        <span class="nav-link text-secondary small mb-2">类型</span>
+                        <div class="d-flex flex-wrap gap-2" id="typeFiltersMobile">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -390,39 +440,48 @@
             // 获取所有基础模型
             const baseModels = new Set(models.map(model => model.baseModel || '未知'));
             const baseModelGroup = document.getElementById('baseModelFilters');
-            baseModelGroup.innerHTML = `
-                <button type="button" class="btn btn-outline-secondary" data-filter="baseModel" data-value="">
+            const baseModelGroupMobile = document.getElementById('baseModelFiltersMobile');
+            const filterHtml = `
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="baseModel" data-value="">
                     全部
                 </button>
             `;
+            baseModelGroup.innerHTML = filterHtml;
+            baseModelGroupMobile.innerHTML = filterHtml;
 
             baseModels.forEach(baseModel => {
-                baseModelGroup.innerHTML += `
-                    <button type="button" class="btn btn-outline-secondary" data-filter="baseModel" data-value="${baseModel}">
+                const buttonHtml = `
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="baseModel" data-value="${baseModel}">
                         ${baseModel}
                     </button>
                 `;
+                baseModelGroup.innerHTML += buttonHtml;
+                baseModelGroupMobile.innerHTML += buttonHtml;
             });
 
             // 获取所有类型
             const types = new Set(models.map(model => model.type || '未知'));
             const typeGroup = document.getElementById('typeFilters');
+            const typeGroupMobile = document.getElementById('typeFiltersMobile');
             typeGroup.innerHTML = `
-                <button type="button" class="btn btn-outline-secondary" data-filter="type" data-value="">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="type" data-value="">
                     全部
                 </button>
             `;
+            typeGroupMobile.innerHTML = typeGroup.innerHTML;
 
             types.forEach(type => {
-                typeGroup.innerHTML += `
-                    <button type="button" class="btn btn-outline-secondary" data-filter="type" data-value="${type}">
+                const buttonHtml = `
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-filter="type" data-value="${type}">
                         ${type}
                     </button>
                 `;
+                typeGroup.innerHTML += buttonHtml;
+                typeGroupMobile.innerHTML += buttonHtml;
             });
 
             // 重新添加事件监听
-            document.querySelectorAll('#baseModelFilters button, #typeFilters button').forEach(button => {
+            document.querySelectorAll('#baseModelFilters button, #typeFilters button, #baseModelFiltersMobile button, #typeFiltersMobile button').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const filter = e.target.dataset.filter;
                     const value = e.target.dataset.value;
