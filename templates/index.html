@@ -41,34 +41,54 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg">
+    <nav class="navbar bg-body-tertiary navbar-expand-lg sticky-top">
         <div class="container-fluid">
-            <span class="navbar-brand">Stable Diffusion 模型管理器</span>
-            <div class="form-check form-switch me-3">
-                <input class="form-check-input" type="checkbox" role="switch" id="nsfwToggle">
-                <label class="form-check-label" for="nsfwToggle">显示 NSFW</label>
-            </div>
-            <button class="btn btn-outline ms-auto" id="darkModeToggle">
+            <a class="navbar-brand" href="#">
+                <img src="../static/favicon.svg" alt="Stable Diffusion 模型管理器" height="26">
+            </a>
+            <button class="btn btn-outline-secondary ms-auto" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                <i class="bi bi-gear"></i>
+                <span class="ms-1">设置</span>
+            </button>
+            <button class="btn btn-outline-success ms-3" id="nsfwToggle">
+                <i class="bi bi-eye-slash-fill" id="nsfwIcon"></i>
+                <span class="ms-1" id="nsfwText">NSFW 已关闭</span>
+            </button>
+            <button class="btn btn-outline ms-3" id="darkModeToggle">
                 <i class="bi bi-sun-fill" id="lightIcon"></i>
                 <i class="bi bi-moon-stars-fill d-none" id="darkIcon"></i>
             </button>
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <div class="row mb-4">
-            <div class="col">
-                <div class="mb-3">
-                    <div class="input-group">
-                        <input type="text" class="form-control text-muted" id="pathInput" readonly placeholder="请选择模型目录">
-                        <button class="btn btn-outline-secondary" id="selectPath" type="button">
-                            <i class="bi bi-folder2-open"></i> 浏览
-                        </button>
-                        <button class="btn btn-outline-primary" id="scanModels">扫描模型</button>
+    <!-- 设置模态窗 -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="settingsModalLabel">设置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">模型目录</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control text-muted" id="pathInput" readonly placeholder="请选择模型目录">
+                            <button class="btn btn-outline-secondary" id="selectPath" type="button">
+                                <i class="bi bi-folder2-open"></i> 浏览
+                            </button>
+                        </div>
                     </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary" id="scanModels" data-bs-dismiss="modal">扫描模型</button>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="container mt-4">
 
         <div class="alert alert-danger d-none" id="error" role="alert"></div>
         <div class="text-center d-none" id="loading">
@@ -109,7 +129,7 @@
         </div>
 
         <!-- 模型列表 -->
-        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3" id="modelsList">
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3 pb-5" id="modelsList">
         </div>
     </div>
 
@@ -151,11 +171,34 @@
         // NSFW 显示状态
         let showNSFW = false;
         const nsfwToggle = document.getElementById('nsfwToggle');
+        const nsfwIcon = document.getElementById('nsfwIcon');
+        const nsfwText = document.getElementById('nsfwText');
         
-        // 监听 NSFW 开关
-        nsfwToggle.addEventListener('change', (e) => {
-            showNSFW = e.target.checked;
+        // 初始化 NSFW 状态
+        updateNSFWButton(false);
+        
+        // 更新 NSFW 按钮状态
+        function updateNSFWButton(show) {
+            showNSFW = show;
+            if (show) {
+                nsfwToggle.classList.remove('btn-outline-success');
+                nsfwToggle.classList.add('btn-outline-danger');
+                nsfwIcon.classList.remove('bi-eye-slash-fill');
+                nsfwIcon.classList.add('bi-eye-fill');
+                nsfwText.textContent = 'NSFW 已开启';
+            } else {
+                nsfwToggle.classList.remove('btn-outline-danger');
+                nsfwToggle.classList.add('btn-outline-success');
+                nsfwIcon.classList.remove('bi-eye-fill');
+                nsfwIcon.classList.add('bi-eye-slash-fill');
+                nsfwText.textContent = 'NSFW 已关闭';
+            }
             filterAndDisplayModels(); // 应用所有筛选条件
+        }
+
+        // 监听 NSFW 按钮点击
+        nsfwToggle.addEventListener('click', () => {
+            updateNSFWButton(!showNSFW);
         });
 
         // 检查系统暗黑模式
@@ -316,7 +359,7 @@
                                 <small class="d-block">类型: ${model.type}</small>
                                 <small class="d-block">基础模型: ${model.baseModel || '未知'}</small>
                             </p>
-                            ${model.url ? `<a href="${model.url}" class="btn btn-outline-primary btn-sm" target="_blank">查看详情</a>` : ''}
+                            ${model.url ? `<a href="${model.url}" class="btn btn-outline-secondary btn-sm" target="_blank">查看详情</a>` : ''}
                         </div>
                     </div>
                 `;
@@ -336,7 +379,7 @@
                 updateFilterOptions(allModels);
 
                 // 显示模型
-                displayModels(allModels);
+                filterAndDisplayModels();
             } catch (err) {
                 showError('加载模型列表失败');
             }
