@@ -18,9 +18,9 @@ VSVersionInfo(
         [StringStruct(u'CompanyName', u'$COMPANY'),
         StringStruct(u'FileDescription', u'$DESCRIPTION'),
         StringStruct(u'FileVersion', u'$VERSION_STR'),
-        StringStruct(u'InternalName', u'SDPromptManager'),
+        StringStruct(u'InternalName', u'SDModelsManager'),
         StringStruct(u'LegalCopyright', u'$COPYRIGHT'),
-        StringStruct(u'OriginalFilename', u'SDPromptManager.exe'),
+        StringStruct(u'OriginalFilename', u'SDModelsManager.exe'),
         StringStruct(u'ProductName', u'$APP_NAME'),
         StringStruct(u'ProductVersion', u'$VERSION_STR')])
       ]), 

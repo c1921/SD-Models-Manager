@@ -11,7 +11,7 @@ if sys.stdout.encoding != 'utf-8':
 
 def clean_dist():
     """清理之前的构建文件"""
-    output_name = f"SD_Prompt_Manager_v{VERSION_STR}"
+    output_name = f"SD_Models_Manager_v{VERSION_STR}"
     
     try:
         for item in ['dist', 'build']:
@@ -68,7 +68,7 @@ def prepare_directories():
 
 def build_executable():
     """构建可执行文件"""
-    output_name = f"SD_Prompt_Manager_v{VERSION_STR}"
+    output_name = f"SD_Models_Manager_v{VERSION_STR}"
     
     try:
         # 设置环境变量以确保正确的编码
