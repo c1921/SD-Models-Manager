@@ -48,19 +48,53 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label" for="pathInput">模型目录</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control text-muted" id="pathInput" readonly placeholder="请选择模型目录">
-                            <button class="btn btn-outline-secondary" id="selectPath" type="button">
-                                <i class="bi bi-folder2-open"></i> 浏览
+                    <!-- 标签页导航 -->
+                    <ul class="nav nav-tabs mb-3" id="settingsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="path-tab" data-bs-toggle="tab" data-bs-target="#path-tab-pane" type="button" role="tab">
+                                <i class="bi bi-folder2"></i> 路径设置
                             </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about-tab-pane" type="button" role="tab">
+                                <i class="bi bi-info-circle"></i> 关于
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- 标签页内容 -->
+                    <div class="tab-content" id="settingsTabContent">
+                        <!-- 路径设置标签页 -->
+                        <div class="tab-pane fade show active" id="path-tab-pane" role="tabpanel" tabindex="0">
+                            <div class="mb-3">
+                                <label class="form-label" for="pathInput">模型目录</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control text-muted" id="pathInput" readonly placeholder="请选择模型目录">
+                                    <button class="btn btn-outline-secondary" id="selectPath" type="button">
+                                        <i class="bi bi-folder2-open"></i> 浏览
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end gap-2 mt-4">
+                                <button type="button" class="btn btn-primary" id="scanModels" data-bs-dismiss="modal">扫描模型</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 关于标签页 -->
+                        <div class="tab-pane fade" id="about-tab-pane" role="tabpanel" tabindex="0">
+                            <div class="text-center py-3">
+                                <img src="/static/favicon.svg" alt="logo" height="64" class="mb-3">
+                                <h5>SD Models Manager</h5>
+                                <p class="text-muted mb-3">版本 <span id="appVersion"></span></p>
+                                <p class="mb-2">
+                                    <a href="https://github.com/c1921" target="_blank" class="text-decoration-none">
+                                        <i class="bi bi-github"></i> GitHub
+                                    </a>
+                                </p>
+                                <small class="text-muted">MIT 开源许可 - 版权所有 (c) 2025</small>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
-                    <button type="button" class="btn btn-primary" id="scanModels" data-bs-dismiss="modal">扫描模型</button>
                 </div>
             </div>
         </div>

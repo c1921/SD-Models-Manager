@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 from src.utils.file_utils import select_directory
+from src.version.version import VERSION_STR, COMPANY, COPYRIGHT
 
 class PathUpdate(BaseModel):
     path: str
@@ -73,5 +74,14 @@ def create_api(manager):
         """选择目录"""
         path = await select_directory()
         return {"path": path}
+
+    @app.get("/api/version")
+    async def get_version():
+        """获取应用版本信息"""
+        return {
+            "version": VERSION_STR,
+            "company": COMPANY,
+            "copyright": COPYRIGHT
+        }
 
     return app 

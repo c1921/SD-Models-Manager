@@ -41,6 +41,13 @@ const api = {
     // 创建扫描事件源
     createScanEventSource() {
         return new EventSource(`${API_BASE}/scan`);
+    },
+
+    // 获取版本信息
+    async getVersion() {
+        const response = await fetch(`${API_BASE}/version`);
+        if (!response.ok) throw new Error('获取版本信息失败');
+        return await response.json();
     }
 };
 

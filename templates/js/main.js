@@ -107,3 +107,15 @@ document.addEventListener('nsfwStateChanged', (e) => {
 // 页面加载时初始化
 loadConfig();
 loadModels();
+
+// 加载版本信息
+async function loadVersion() {
+    try {
+        const versionInfo = await api.getVersion();
+        document.getElementById('appVersion').textContent = versionInfo.version;
+    } catch (err) {
+        console.error('加载版本信息失败:', err);
+    }
+}
+
+loadVersion();
