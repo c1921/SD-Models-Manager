@@ -75,12 +75,16 @@ def build_executable():
         os.environ['PYTHONIOENCODING'] = 'utf-8'
         
         PyInstaller.__main__.run([
-            'model_manager.py',
+            'main.py',
             f'--name={output_name}',
             '--onefile',
             '--hidden-import=uvicorn.logging',
             '--hidden-import=uvicorn.lifespan.on',
             '--hidden-import=uvicorn.lifespan',
+            '--hidden-import=src.core.model_manager',
+            '--hidden-import=src.api.model_api',
+            '--hidden-import=src.utils.file_utils',
+            '--hidden-import=src.utils.hash_utils',
             '--add-data=templates;templates',
             '--add-data=static/favicon.svg;static',
         ])

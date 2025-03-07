@@ -2,38 +2,13 @@ import os
 import json
 import requests
 from pathlib import Path
-import hashlib
-import argparse
 from typing import Dict, Any
-from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
-from pydantic import BaseModel
-import uvicorn
-from fastapi.middleware.cors import CORSMiddleware
 import aiohttp
 import aiofiles
 from urllib.parse import urlparse
 import time
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import webbrowser
-import threading
-import socket
-import tkinter as tk
-from tkinter import filedialog
 
-class PathUpdate(BaseModel):
-    path: str
-
-async def select_directory() -> str:
-    """使用文件对话框选择目录"""
-    root = tk.Tk()
-    root.withdraw()  # 隐藏主窗口
-    root.attributes('-topmost', True)  # 确保对话框在最前面
-    path = filedialog.askdirectory()
-    root.destroy()  # 完全清理 Tk 实例
-    return path if path else ""
+from src.utils.hash_utils import HashUtils
 
 class ModelManager:
     def __init__(self, config_file="config.json"):
@@ -44,7 +19,7 @@ class ModelManager:
         self.models_info: Dict[str, Any] = {}
         self.images_path = Path("static/images")  # 添加图片保存路径
         self.images_path.mkdir(parents=True, exist_ok=True)  # 确保目录存在
-        self.thread_pool = ThreadPoolExecutor()
+        self.hash_utils = HashUtils()
         
     def load_config(self) -> dict:
         """加载配置文件"""
@@ -63,23 +38,6 @@ class ModelManager:
         self.models_path = Path(path)
         self.config["models_path"] = str(self.models_path)
         self.save_config()
-    
-    def calculate_model_hash(self, file_path):
-        """计算模型文件的SHA256哈希值"""
-        sha256_hash = hashlib.sha256()
-        with open(file_path, "rb") as f:
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
-        return sha256_hash.hexdigest()
-    
-    async def calculate_model_hash_async(self, file_path):
-        """异步计算模型文件的哈希值"""
-        loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(self.thread_pool, self.calculate_model_hash, file_path)
-    
-    def _get_file_mtime(self, file_path: Path) -> float:
-        """获取文件的修改时间戳"""
-        return os.path.getmtime(file_path)
     
     async def scan_models(self):
         """扫描指定目录下的所有.safetensors文件"""
@@ -105,7 +63,7 @@ class ModelManager:
         for file_path in safetensors_files:
             print(f"\n处理文件: {file_path.name}")
             try:
-                current_mtime = self._get_file_mtime(file_path)
+                current_mtime = os.path.getmtime(file_path)
                 existing_info = self.models_info.get(str(file_path), {})
                 
                 # 检查文件是否已经扫描过且未修改
@@ -115,7 +73,7 @@ class ModelManager:
                     yield f"data: {json.dumps({'progress': processed / total, 'message': f'跳过: {file_path.name}'})}\n\n"
                     continue
                 
-                model_hash = await self.calculate_model_hash_async(file_path)
+                model_hash = await self.hash_utils.calculate_model_hash_async(file_path)
                 print(f"计算得到哈希值: {model_hash}")
                 await self.fetch_model_info(model_hash, file_path, current_mtime)
                 self.save_models_info()  # 每次获取新信息后保存
@@ -259,107 +217,4 @@ class ModelManager:
             }
             for model_path in self.models_info.keys()
             if str(model_path).startswith(current_path)
-        ]
-
-# 创建 FastAPI 应用
-app = FastAPI(title="Stable Diffusion 模型管理器")
-
-# 配置 CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# 创建 ModelManager 实例
-manager = ModelManager()
-
-# 在创建 FastAPI 应用后添加
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-@app.get("/")
-async def read_root():
-    return FileResponse("templates/index.html")
-
-@app.get("/favicon.svg")
-async def get_favicon():
-    return FileResponse("templates/favicon.svg")
-
-@app.get("/api/models")
-async def get_models():
-    """获取所有模型信息"""
-    return manager.get_all_models_info()
-
-@app.post("/api/path")
-async def update_path(path_update: PathUpdate):
-    """更新模型路径"""
-    if not os.path.exists(path_update.path):
-        raise HTTPException(status_code=400, detail="路径不存在")
-    manager.update_models_path(path_update.path)
-    return {"message": "路径已更新"}
-
-@app.get("/api/scan")
-async def scan_models_endpoint():
-    """扫描模型"""
-    if not manager.models_path or not os.path.exists(manager.models_path):
-        raise HTTPException(status_code=400, detail="请先设置有效的模型目录路径")
-    try:
-        return StreamingResponse(
-            manager.scan_models(),
-            media_type="text/event-stream"
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.get("/api/config")
-async def get_config():
-    """获取当前配置"""
-    return {
-        "models_path": str(manager.models_path) if manager.models_path else "",
-        "is_path_valid": os.path.exists(manager.models_path) if manager.models_path else False
-    }
-
-@app.post("/api/select_directory")
-async def select_directory_endpoint():
-    """选择目录"""
-    path = await select_directory()
-    return {"path": path}
-
-def find_free_port(start_port=8080, max_tries=100):
-    """查找可用的端口号"""
-    for port in range(start_port, start_port + max_tries):
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('127.0.0.1', port))
-                return port
-        except OSError:
-            continue
-    raise RuntimeError('无法找到可用的端口')
-
-def open_browser(port: int):
-    """延迟一秒后打开浏览器"""
-    time.sleep(1)
-    webbrowser.open(f'http://127.0.0.1:{port}')
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='模型管理器')
-    parser.add_argument('--port', type=int, default=None, help='Web界面端口')
-    args = parser.parse_args()
-
-    # 获取可用端口
-    port = args.port or find_free_port()
-
-    # 加载已有的模型信息
-    manager.load_models_info()
-    
-    # 在新线程中打开浏览器
-    threading.Thread(target=open_browser, args=(port,), daemon=True).start()
-    
-    # 启动 FastAPI 服务器
-    uvicorn.run(
-        app, 
-        host="127.0.0.1", 
-        port=port
-    ) 
+        ] 
