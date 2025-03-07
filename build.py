@@ -3,7 +3,7 @@ import os
 import shutil
 import sys
 from string import Template
-from src.version import *
+from src.version.version import *
 
 # 设置默认编码为 UTF-8
 if sys.stdout.encoding != 'utf-8':
@@ -14,15 +14,31 @@ def clean_dist():
     output_name = f"SD_Models_Manager_v{VERSION_STR}"
     
     try:
+        # 清理构建目录
         for item in ['dist', 'build']:
             if os.path.exists(item):
                 shutil.rmtree(item)
                 print(f"已删除 {item} 目录")
                 
-        for item in ['version_info.txt', 'runtime_hook.py', f'{output_name}.spec']:
-            if os.path.exists(item):
-                os.remove(item)
-                print(f"已删除 {item} 文件")
+        # 清理构建生成的文件
+        for item in [
+            'version_info.txt',
+            'runtime_hook.py',
+            f'{output_name}.spec',
+            'SD_Models_Manager_v*.spec',  # 使用通配符匹配所有版本的 spec 文件
+            '__pycache__',
+            '**/__pycache__',
+            '.pytest_cache',
+            '.coverage'
+        ]:
+            # 使用 glob 处理通配符
+            import glob
+            for file in glob.glob(item, recursive=True):
+                if os.path.isdir(file):
+                    shutil.rmtree(file)
+                else:
+                    os.remove(file)
+                print(f"已删除 {file}")
                 
     except Exception as e:
         print(f"清理文件时出错: {e}", file=sys.stderr)
