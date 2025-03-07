@@ -25,29 +25,39 @@ class ModelDisplayManager {
         return `
         <div class="col">
             <div class="card h-100 model-card" data-model='${JSON.stringify(model)}'>
-                <div class="position-relative">
+                <div class="row g-0 h-100">
                     ${model.preview_url ? `
-                        <img
-                            src="${imgSrc}"
-                            class="card-img-top"
-                            alt="${model.name}"
-                            onerror="this.onerror=null; this.src='${model.preview_url}';"
-                            style="height: 200px; object-fit: cover;"
-                        >
+                    <div class="col-4 col-sm-12">
+                        <div class="card-img-container h-100">
+                            <img
+                                src="${imgSrc}"
+                                alt="${model.name}"
+                                onerror="this.onerror=null; this.src='${model.preview_url}';"
+                                class="rounded-start rounded-sm-top"
+                                style="cursor: pointer"
+                            >
+                        </div>
+                    </div>
                     ` : ''}
-                    ${model.nsfw ? '<span class="position-absolute top-0 end-0 badge text-bg-danger m-2">NSFW</span>' : ''}
-                </div>
-                <div class="card-body">
-                    <h5 class="card-title text-truncate" title="${model.name}">${model.name}</h5>
-                    <p class="card-text">
-                        <small class="text-body-secondary">类型: ${model.type}</small><br>
-                        <small class="text-body-secondary">基础模型: ${model.baseModel || '未知'}</small>
-                    </p>
+                    <div class="col-8 col-sm-12">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title fw-bold mb-0" title="${model.name}">${model.name}</h5>
+                                ${model.nsfw ? '<span class="badge text-bg-danger">NSFW</span>' : ''}
+                            </div>
+                            <p class="card-text">
+                                <small class="d-block">类型: ${model.type}</small>
+                                <small class="d-block">基础模型: ${model.baseModel || '未知'}</small>
+                            </p>
+                            ${model.url ? `<a href="${model.url}" class="btn btn-outline-secondary btn-sm" target="_blank">查看详情</a>` : ''}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         `;
     }
+
 
     // 显示模型详情
     showModelDetail(model) {
