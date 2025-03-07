@@ -24,6 +24,7 @@ def create_api(manager):
 
     # 挂载静态文件
     app.mount("/static", StaticFiles(directory="static"), name="static")
+    app.mount("/templates", StaticFiles(directory="templates"), name="templates")
 
     @app.get("/")
     async def read_root():
