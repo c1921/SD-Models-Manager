@@ -24,25 +24,25 @@ class ModelDisplayManager {
 
         return `
         <div class="col">
-            <div class="card h-100 model-card" data-model='${JSON.stringify(model)}'>
+            <div class="card h-100 d-flex flex-column model-card" data-model='${JSON.stringify(model)}'>
                 <div class="row g-0 h-100">
                     ${model.preview_url ? `
                     <div class="col-4 col-sm-12">
-                        <div class="card-img-container h-100">
+                        <div class="position-relative d-flex align-items-center justify-content-center overflow-hidden ratio" style="--bs-aspect-ratio: 133%;">
                             <img
                                 src="${imgSrc}"
                                 alt="${model.name}"
                                 onerror="this.onerror=null; this.src='${model.preview_url}';"
-                                class="rounded-start rounded-sm-top"
+                                class="rounded-start rounded-sm-top w-100 h-100 object-fit-cover"
                                 style="cursor: pointer"
                             >
                         </div>
                     </div>
                     ` : ''}
                     <div class="col-8 col-sm-12">
-                        <div class="card-body">
+                        <div class="card-body flex-grow-1">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h5 class="card-title fw-bold mb-0" title="${model.name}">${model.name}</h5>
+                                <h5 class="card-title text-truncate fw-bold mb-0" title="${model.name}">${model.name}</h5>
                                 ${model.nsfw ? '<span class="badge text-bg-danger">NSFW</span>' : ''}
                             </div>
                             <p class="card-text">
