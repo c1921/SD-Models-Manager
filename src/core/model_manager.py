@@ -7,6 +7,8 @@ import aiohttp
 import aiofiles
 from urllib.parse import urlparse
 import time
+import asyncio
+from aiohttp import ClientTimeout
 
 from src.utils.hash_utils import HashUtils
 
@@ -20,6 +22,9 @@ class ModelManager:
         self.images_path = Path("static/images")  # 添加图片保存路径
         self.images_path.mkdir(parents=True, exist_ok=True)  # 确保目录存在
         self.hash_utils = HashUtils()
+        # 添加并发限制和超时设置
+        self.semaphore = asyncio.Semaphore(5)  # 限制并发请求数
+        self.timeout = ClientTimeout(total=10)  # 10秒超时
         
     def load_config(self) -> dict:
         """加载配置文件"""
@@ -86,32 +91,34 @@ class ModelManager:
             
     async def fetch_model_info(self, model_hash, file_path, mtime: float):
         """从Civitai API获取模型信息并下载预览图"""
-        try:
-            response = requests.get(f"{self.api_base_url}/model-versions/by-hash/{model_hash}")
-            if response.status_code == 200:
-                model_info = response.json()
-                
-                # 下载预览图
-                preview_url = model_info.get("images", [{}])[0].get("url")
-                if preview_url:
-                    local_preview = await self.download_image(preview_url)
-                    if local_preview:
-                        model_info = {
-                            **model_info,
-                            "local_preview": local_preview,
-                            "mtime": mtime,  # 记录文件修改时间
-                            "scan_time": time.time()  # 记录扫描时间
-                        }
-                
-                self.models_info[str(file_path)] = {
-                    "hash": model_hash,
-                    "info": model_info
-                }
-                print(f"成功获取模型信息: {file_path.name}")
-            else:
-                print(f"无法获取模型信息: {file_path.name}, 状态码: {response.status_code}")
-        except Exception as e:
-            print(f"获取模型信息时出错: {file_path.name}, 错误: {str(e)}")
+        async with self.semaphore:  # 使用信号量限制并发
+            try:
+                async with aiohttp.ClientSession(timeout=self.timeout) as session:
+                    async with session.get(f"{self.api_base_url}/model-versions/by-hash/{model_hash}") as response:
+                        if response.status == 200:
+                            model_info = await response.json()
+                            
+                            # 下载预览图
+                            preview_url = model_info.get("images", [{}])[0].get("url")
+                            if preview_url:
+                                local_preview = await self.download_image(preview_url)
+                                if local_preview:
+                                    model_info = {
+                                        **model_info,
+                                        "local_preview": local_preview,
+                                        "mtime": mtime,  # 记录文件修改时间
+                                        "scan_time": time.time()  # 记录扫描时间
+                                    }
+                            
+                            self.models_info[str(file_path)] = {
+                                "hash": model_hash,
+                                "info": model_info
+                            }
+                            print(f"成功获取模型信息: {file_path.name}")
+                        else:
+                            print(f"无法获取模型信息: {file_path.name}, 状态码: {response.status}")
+            except Exception as e:
+                print(f"获取模型信息时出错: {file_path.name}, 错误: {str(e)}")
     
     def save_models_info(self, output_file="models_info.json"):
         """保存模型信息到JSON文件"""
@@ -161,18 +168,27 @@ class ModelManager:
         if local_path.exists():
             return f"/static/images/{filename}"
             
+        max_retries = 3
+        retry_delay = 1
+        
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        async with aiofiles.open(local_path, 'wb') as f:
-                            await f.write(await response.read())
-                        return f"/static/images/{filename}"
+            for attempt in range(max_retries):
+                try:
+                    async with aiohttp.ClientSession(timeout=self.timeout) as session:
+                        async with session.get(url) as response:
+                            if response.status == 200:
+                                async with aiofiles.open(local_path, 'wb') as f:
+                                    await f.write(await response.read())
+                                return f"/static/images/{filename}"
+                    break  # 如果成功就跳出重试循环
+                except Exception as e:
+                    if attempt < max_retries - 1:  # 如果不是最后一次尝试
+                        await asyncio.sleep(retry_delay * (attempt + 1))  # 指数退避
+                        continue
+                    raise  # 最后一次尝试失败，抛出异常
         except Exception as e:
             print(f"下载图片失败: {url}, 错误: {str(e)}")
             return None
-            
-        return None
 
     def get_model_display_info(self, model_path: str) -> dict:
         """获取用于显示的模型信息"""
