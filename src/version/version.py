@@ -1,5 +1,5 @@
 # 版本号
-VERSION = (0, 1, 0)  # 主版本号, 次版本号, 修订号
+VERSION = (0, 1, 1)  # 主版本号, 次版本号, 修订号
 VERSION_STR = f"{'.'.join(map(str, VERSION))}"  # 自动生成版本号字符串
 
 # 应用信息
