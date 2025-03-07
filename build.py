@@ -3,7 +3,7 @@ import os
 import shutil
 import sys
 from string import Template
-from version import *
+from src.version import *
 
 # 设置默认编码为 UTF-8
 if sys.stdout.encoding != 'utf-8':
@@ -35,7 +35,7 @@ def generate_version_info():
     
     try:
         # 显式指定 UTF-8 编码
-        with open('version_info.template', 'r', encoding='utf-8') as f:
+        with open('src/version/version_info.template', 'r', encoding='utf-8') as f:
             template = Template(f.read())
         
         version_tuple = VERSION + (0,)
