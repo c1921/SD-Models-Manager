@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
@@ -14,6 +14,12 @@ def create_api(manager):
     """创建并配置FastAPI应用"""
     app = FastAPI(title="Stable Diffusion 模型管理器")
 
+    # 检查是否为开发环境
+    is_dev_mode = os.environ.get("DEV_MODE", "0") == "1"
+    
+    # 前端开发服务器地址
+    frontend_dev_server = "http://localhost:5173"
+
     # 配置 CORS
     app.add_middleware(
         CORSMiddleware,
@@ -25,15 +31,34 @@ def create_api(manager):
 
     # 挂载静态文件
     app.mount("/static", StaticFiles(directory="static"), name="static")
-    app.mount("/templates", StaticFiles(directory="templates"), name="templates")
+    
+    # 在非开发模式下才挂载templates目录
+    if not is_dev_mode:
+        app.mount("/templates", StaticFiles(directory="templates"), name="templates")
+        
+        # 如果前端已构建，则挂载前端构建目录
+        if os.path.exists("frontend/dist"):
+            app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
     @app.get("/")
     async def read_root():
+        # 开发模式下重定向到Vite开发服务器
+        if is_dev_mode:
+            return RedirectResponse(url=frontend_dev_server)
+            
+        # 如果前端已构建，使用构建后的文件
+        if os.path.exists("frontend/dist/index.html"):
+            return FileResponse("frontend/dist/index.html")
+            
+        # 回退到原有模板
         return FileResponse("templates/index.html")
 
     @app.get("/favicon.svg")
     async def get_favicon():
-        return FileResponse("templates/favicon.svg")
+        # 优先使用前端的favicon
+        if os.path.exists("frontend/public/favicon.svg"):
+            return FileResponse("frontend/public/favicon.svg")
+        return FileResponse("static/favicon.svg")
 
     @app.get("/api/models")
     async def get_models():
@@ -69,8 +94,8 @@ def create_api(manager):
             "is_path_valid": os.path.exists(manager.models_path) if manager.models_path else False
         }
 
-    @app.post("/api/select_directory")
-    async def select_directory_endpoint():
+    @app.get("/api/select-path")
+    async def select_path_endpoint():
         """选择目录"""
         path = await select_directory()
         return {"path": path}
