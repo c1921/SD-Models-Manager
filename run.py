@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-开发辅助脚本，同时启动后端API服务和前端Vite开发服务器
+开发辅助脚本，启动前端Vite开发服务器和后端API服务
 """
 import os
 import subprocess
@@ -20,14 +20,18 @@ def is_windows():
     return platform.system() == "Windows"
 
 def start_backend(port):
-    """启动后端API服务"""
+    """启动后端API服务
+    
+    Args:
+        port: 端口号
+    """
     print(f"正在启动后端API服务 (端口: {port})...")
     
     # 设置环境变量
     env = os.environ.copy()
     
     # 构建命令
-    cmd = [sys.executable, "main.py", "--port", str(port), "--no-browser"]
+    cmd = [sys.executable, "main.py", "--port", str(port), "--dev", "--no-browser"]
     
     # 启动后端进程
     if is_windows():
@@ -45,7 +49,7 @@ def start_backend(port):
             preexec_fn=os.setsid
         )
     
-    processes.append(("backend", backend_process))
+    processes.append(("后端API", backend_process))
     print(f"后端API服务已启动，进程ID: {backend_process.pid}")
     
     # 等待一点时间确保服务已启动
@@ -87,7 +91,7 @@ def start_frontend(api_port):
             preexec_fn=os.setsid
         )
     
-    processes.append(("frontend", frontend_process))
+    processes.append(("前端开发服务器", frontend_process))
     print(f"前端开发服务器已启动，进程ID: {frontend_process.pid}")
     
     return frontend_process
@@ -126,9 +130,10 @@ def signal_handler(sig, frame):
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(description='开发辅助脚本，同时启动后端和前端服务')
+    parser = argparse.ArgumentParser(description='SD Models Manager开发工具')
     parser.add_argument('--port', type=int, default=None, help='后端API端口')
     parser.add_argument('--no-browser', action='store_true', help='不自动打开浏览器')
+    
     args = parser.parse_args()
     
     # 设置信号处理器
@@ -156,12 +161,25 @@ def main():
         print("前端服务地址: http://localhost:5173")
         print("按Ctrl+C可同时关闭所有服务")
         
-        # 等待后端进程结束
-        while backend_process.poll() is None:
+        # 监控进程状态
+        while True:
+            backend_status = backend_process.poll()
+            frontend_status = frontend_process.poll()
+            
+            # 如果任一进程结束，打印信息并终止另一个
+            if backend_status is not None:
+                print(f"\n后端服务已终止，退出代码: {backend_status}")
+                print("正在关闭前端服务...")
+                break
+            
+            if frontend_status is not None:
+                print(f"\n前端服务已终止，退出代码: {frontend_status}")
+                print("正在关闭后端服务...")
+                break
+            
             time.sleep(1)
         
-        # 如果后端终止，也关闭前端
-        print("后端服务已终止，正在关闭前端服务...")
+        # 清理资源
         cleanup()
         
     except KeyboardInterrupt:
@@ -173,4 +191,4 @@ def main():
         sys.exit(1)
 
 if __name__ == "__main__":
-    main() 
+    sys.exit(main()) 

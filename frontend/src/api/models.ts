@@ -67,8 +67,22 @@ export const ModelsAPI = {
 
   // 选择模型目录（通过系统对话框）
   selectModelPath: async (): Promise<string> => {
-    const response = await apiClient.get('/select-path');
-    return response.data.path;
+    try {
+      const response = await apiClient.get('/select-path');
+      if (response.data.updated) {
+        // 如果后端已经更新了路径，不需要再次调用setModelPath
+        return response.data.path;
+      } else if (response.data.path) {
+        // 如果有路径但未更新，手动更新
+        await ModelsAPI.setModelPath(response.data.path);
+        return response.data.path;
+      }
+      // 如果没有路径，返回空字符串
+      return '';
+    } catch (e) {
+      console.error('选择目录失败', e);
+      throw e;
+    }
   },
 
   // 获取所有模型
