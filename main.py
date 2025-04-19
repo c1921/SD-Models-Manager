@@ -9,26 +9,23 @@ from src.core.model_manager import ModelManager
 from src.api.model_api import create_api
 from src.utils.file_utils import find_free_port
 
-def open_browser(port: int):
+def open_browser(url: str):
     """延迟一秒后打开浏览器"""
     time.sleep(1)
-    webbrowser.open(f'http://127.0.0.1:{port}')
+    webbrowser.open(url)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='模型管理器')
-    parser.add_argument('--port', type=int, default=None, help='Web界面端口')
-    parser.add_argument('--dev', action='store_true', help='开发模式')
+    parser.add_argument('--port', type=int, default=None, help='API服务端口')
+    parser.add_argument('--frontend', default=None, help='前端URL地址，如http://localhost:5173')
+    parser.add_argument('--no-browser', action='store_true', help='不自动打开浏览器')
     args = parser.parse_args()
-
-    # 设置开发模式环境变量
-    if args.dev:
-        os.environ["DEV_MODE"] = "1"
-        print("正在以开发模式运行...")
-    else:
-        os.environ["DEV_MODE"] = "0"
 
     # 获取可用端口
     port = args.port or find_free_port()
+    
+    # 前端URL，如果提供了--frontend参数，使用该地址
+    frontend_url = args.frontend or f"http://localhost:{port}"
 
     # 创建 ModelManager 实例
     manager = ModelManager()
@@ -39,13 +36,18 @@ if __name__ == "__main__":
     # 创建 FastAPI 应用
     app = create_api(manager)
     
-    # 除非在开发模式下，否则在新线程中打开浏览器
-    if not args.dev:
-        threading.Thread(target=open_browser, args=(port,), daemon=True).start()
+    # 在新线程中打开浏览器（如果未指定--no-browser）
+    if not args.no_browser:
+        # 打开指定的前端URL
+        threading.Thread(target=open_browser, args=(frontend_url,), daemon=True).start()
+    
+    print(f"API服务运行在: http://127.0.0.1:{port}")
+    if args.frontend:
+        print(f"前端页面地址: {args.frontend}")
     else:
-        print(f"API服务运行在: http://127.0.0.1:{port}")
-        print(f"前端开发服务器应运行在: http://localhost:5173")
-        print(f"确保在frontend/vite.config.ts中的代理target配置为'http://127.0.0.1:{port}'")
+        print("未指定前端地址，将尝试在本地访问API服务")
+        print("如果您使用Vue前端开发服务器，请使用以下命令:")
+        print(f"python main.py --frontend http://localhost:5173 --no-browser")
     
     # 启动 FastAPI 服务器
     uvicorn.run(app, host="127.0.0.1", port=port) 
