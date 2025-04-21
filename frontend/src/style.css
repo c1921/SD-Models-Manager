@@ -1,23 +1,29 @@
-/* 全局样式 */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-}
+@import "tailwindcss";
 
-#app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
+@plugin "flyonui";
 
-/* 页面过渡动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
+@import "flyonui/variants.css";
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+@source "../node_modules/flyonui/flyonui.js";
+
+@plugin "@iconify/tailwind4";
+
+
+
+/* Import Third-party override css */
+
+/* @import "flyonui/src/vendor/flatpickr.css"; */
+
+/* @import "flyonui/src/vendor/notyf.css"; */
+
+/* @import "flyonui/src/vendor/datatables.css"; */
+
+/* @import "flyonui/src/vendor/editor.css"; */
+
+/* @import "flyonui/src/vendor/fullcalendar.css"; */
+
+/* @import "flyonui/src/vendor/raty.css"; */
+
+/* @import "flyonui/src/vendor/waves.css"; */
+
+/* @import "flyonui/src/vendor/apexcharts.css"; */
