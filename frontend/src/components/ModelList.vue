@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 加载错误提示 -->
-    <div v-if="error" class="alert alert-danger" role="alert">
+    <div v-if="error" class="alert alert-error" role="alert">
       <span class="icon-[tabler--alert-circle] me-2"></span>
       {{ error }}
     </div>
@@ -11,7 +11,7 @@
       <div class="w-full mb-4">
         <div class="progress h-5">
           <div 
-            class="progress-bar progress-bar-striped progress-bar-animated" 
+            class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
             role="progressbar" 
             :style="`width: ${progress}%`" 
             :aria-valuenow="progress" 
@@ -20,17 +20,17 @@
           >{{ progress }}%</div>
         </div>
       </div>
-      <div class="text-gray-500">{{ progressMessage }}</div>
+      <div>{{ progressMessage }}</div>
     </div>
 
     <!-- 模型列表 -->
     <div v-if="!loading && models.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-8">
       <div v-for="model in filteredModels" :key="model.id">
         <div 
-          class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col"
+          class="rounded-lg shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col bg-base-100 border border-base-200"
           @click="onModelClick(model)"
         >
-          <div class="relative pt-[130%]">
+          <div class="relative pt-[125%]">
             <img 
               v-if="model.preview && (nsfw || !model.nsfw)" 
               :src="model.preview" 
@@ -38,22 +38,22 @@
               :alt="model.name">
             <div 
               v-else 
-              class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-t-lg">
-              <span class="icon-[tabler--photo] size-10 text-gray-400"></span>
+              class="absolute inset-0 flex items-center justify-center rounded-t-lg bg-base-200">
+              <span class="icon-[tabler--photo] size-10 text-base-content opacity-50"></span>
             </div>
             <div 
               v-if="model.nsfw" 
-              class="badge badge-danger absolute top-2 right-2"
+              class="badge badge-error absolute top-2 right-2"
             >NSFW</div>
           </div>
           <div class="p-4 flex-1">
-            <h3 class="text-base font-medium truncate">{{ model.name }}</h3>
+            <h3 class="text-base font-medium truncate text-base-content">{{ model.name }}</h3>
             <div class="flex flex-col gap-1 mt-2">
-              <div class="text-sm text-gray-700 dark:text-gray-300">类型: {{ model.type }}</div>
-              <div class="text-sm text-gray-700 dark:text-gray-300">基础模型: {{ model.base_model }}</div>
+              <div class="text-sm text-base-content/80">类型: {{ model.type }}</div>
+              <div class="text-sm text-base-content/80">基础模型: {{ model.base_model }}</div>
             </div>
           </div>
-          <div class="flex justify-between items-center px-4 py-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500">
+          <div class="flex justify-between items-center px-4 py-2 border-t border-base-200 text-xs text-base-content/70">
             <span class="truncate max-w-[70%]">{{ model.filename }}</span>
             <span v-if="model.size">{{ formatFileSize(model.size) }}</span>
           </div>
@@ -65,10 +65,10 @@
     <div class="flex flex-col items-center justify-center py-16" v-if="!loading && models.length === 0">
       <div class="text-center">
         <div class="text-center mb-4">
-          <span class="icon-[tabler--database-x] text-gray-300 text-6xl"></span>
+          <span class="icon-[tabler--database-x] text-6xl text-base-content/30"></span>
         </div>
         <h4 class="text-lg font-medium mb-2">未找到模型</h4>
-        <p class="text-gray-500 mb-4">请在设置中选择模型目录并进行扫描</p>
+        <p class="mb-4 text-base-content/70">请在设置中选择模型目录并进行扫描</p>
         <button 
           type="button"
           class="btn btn-primary"

@@ -17,12 +17,12 @@
     tabindex="-1"
   >
     <div class="modal-dialog overlay-open:opacity-100 overlay-open:duration-300">
-      <div class="modal-content bg-gray-50 dark:bg-gray-800">
-        <div class="modal-header border-b border-gray-200 dark:border-gray-700">
-          <h3 class="modal-title">设置</h3>
+      <div class="modal-content bg-base-100">
+        <div class="modal-header border-b border-base-200">
+          <h3 class="modal-title text-base-content">设置</h3>
           <button 
             type="button" 
-            class="btn btn-text btn-circle btn-sm absolute end-3 top-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" 
+            class="btn btn-text btn-circle btn-sm absolute end-3 top-3 text-base-content/70 hover:text-base-content" 
             aria-label="关闭" 
             data-overlay="#settings-modal"
           >
@@ -33,7 +33,7 @@
           <nav class="tabs tabs-bordered overflow-x-auto" aria-label="设置标签" role="tablist" aria-orientation="horizontal">
             <button 
               type="button" 
-              class="tab active-tab:tab-active active" 
+              class="tab active-tab:tab-active active text-base-content/70 active:text-base-content" 
               id="path-tab-item" 
               data-tab="#path-tab-content" 
               aria-controls="path-tab-content" 
@@ -45,7 +45,7 @@
             </button>
             <button 
               type="button" 
-              class="tab active-tab:tab-active" 
+              class="tab active-tab:tab-active text-base-content/70 active:text-base-content" 
               id="about-tab-item" 
               data-tab="#about-tab-content" 
               aria-controls="about-tab-content" 
@@ -61,13 +61,13 @@
             <div id="path-tab-content" role="tabpanel" aria-labelledby="path-tab-item">
               <div class="mb-6">
                 <label for="modelPath" class="label">
-                  <span class="label-text font-medium text-gray-700 dark:text-gray-300">模型目录</span>
+                  <span class="label-text font-medium text-base-content">模型目录</span>
                 </label>
                 <div class="flex items-center space-x-2">
                   <input 
                     id="modelPath"
                     type="text" 
-                    class="input input-bordered flex-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300" 
+                    class="input input-bordered flex-1 bg-base-100 text-base-content" 
                     placeholder="请选择模型目录" 
                     readonly 
                     :value="modelPath"
@@ -87,23 +87,23 @@
             <div id="about-tab-content" class="hidden" role="tabpanel" aria-labelledby="about-tab-item">
               <div class="flex flex-col items-center py-4">
                 <img src="/favicon.svg" alt="logo" class="h-16 mb-3">
-                <h5 class="text-lg font-medium mb-2 text-gray-800 dark:text-gray-200">SD Models Manager</h5>
-                <p class="text-gray-600 dark:text-gray-400 mb-3">版本 <span>{{ appVersion }}</span></p>
+                <h5 class="text-lg font-medium mb-2 text-base-content">SD Models Manager</h5>
+                <p class="text-base-content/80 mb-3">版本 <span>{{ appVersion }}</span></p>
                 <p class="mb-2">
-                  <a href="https://github.com/c1921/SD-Models-Manager" target="_blank" class="text-primary hover:text-primary-dark flex items-center">
+                  <a href="https://github.com/c1921/SD-Models-Manager" target="_blank" class="text-primary hover:text-primary-focus flex items-center">
                     <span class="icon-[tabler--brand-github] inline-block me-1.5 size-5"></span>
                     GitHub
                   </a>
                 </p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">MIT 开源许可 - 版权所有 (c) 2025</p>
+                <p class="text-sm text-base-content/60">MIT 开源许可 - 版权所有 (c) 2025</p>
               </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer border-t border-gray-200 dark:border-gray-700">
+        <div class="modal-footer border-t border-base-200">
           <button 
             type="button" 
-            class="btn btn-soft btn-secondary text-gray-700 dark:text-gray-300" 
+            class="btn btn-outline" 
             data-overlay="#settings-modal"
           >
             关闭

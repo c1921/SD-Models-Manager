@@ -17,12 +17,12 @@
     tabindex="-1"
   >
     <div class="modal-dialog overlay-open:opacity-100 overlay-open:duration-300 max-w-4xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">{{ model?.name || '' }}</h3>
+      <div class="modal-content bg-base-100">
+        <div class="modal-header border-b border-base-200">
+          <h3 class="modal-title text-base-content">{{ model?.name || '' }}</h3>
           <button 
             type="button" 
-            class="btn btn-text btn-circle btn-sm absolute end-3 top-3" 
+            class="btn btn-text btn-circle btn-sm absolute end-3 top-3 text-base-content/70 hover:text-base-content" 
             aria-label="关闭" 
             data-overlay="#model-detail-modal"
             @click="onClose"
@@ -40,13 +40,13 @@
                 :alt="model?.name">
               <div 
                 v-else 
-                class="flex flex-col items-center justify-center p-12 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <span class="icon-[tabler--photo] size-12 text-gray-400"></span>
-                <p class="mt-3 text-gray-500">无预览图</p>
+                class="flex flex-col items-center justify-center p-12 rounded-lg bg-base-200">
+                <span class="icon-[tabler--photo] size-12 text-base-content/30"></span>
+                <p class="mt-3 text-base-content/70">无预览图</p>
               </div>
             </div>
             <div>
-              <div v-if="model" class="flex flex-col space-y-3">
+              <div v-if="model" class="flex flex-col space-y-3 text-base-content">
                 <p><span class="font-medium">文件名:</span> {{ model.filename }}</p>
                 <p><span class="font-medium">模型类型:</span> {{ model.type }}</p>
                 <p v-if="model.size"><span class="font-medium">文件大小:</span> {{ formatFileSize(model.size) }}</p>
@@ -59,7 +59,7 @@
                     <span 
                       v-for="tag in model.tags" 
                       :key="tag"
-                      class="badge badge-neutral"
+                      class="badge badge-secondary"
                     >{{ tag }}</span>
                   </div>
                 </div>
@@ -67,10 +67,10 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
+        <div class="modal-footer border-t border-base-200">
           <button 
             type="button" 
-            class="btn btn-soft btn-secondary" 
+            class="btn btn-outline" 
             data-overlay="#model-detail-modal"
             @click="onClose"
           >

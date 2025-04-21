@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen h-screen flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden">
+  <div class="min-h-screen h-screen flex flex-col overflow-hidden">
     <!-- 使用导航栏组件 -->
     <AppNavbar
       :nsfw="nsfw"
@@ -29,7 +29,7 @@
     <div class="flex-1 container-fluid flex flex-col lg:flex-row overflow-hidden">
       <!-- 主内容区 - 模型列表组件 -->
       <div class="flex-1 overflow-hidden">
-        <div class="h-full overflow-y-auto px-4 py-6">
+        <div class="h-full overflow-y-auto px-4 py-6 bg-base-200">
           <ModelList
             :models="models"
             :filtered-models="filteredModels"
@@ -181,9 +181,9 @@ function toggleNsfw() {
 
 function toggleDarkMode() {
   darkMode.value = !darkMode.value;
-  document.documentElement.classList.toggle('dark', darkMode.value);
-  // 保存设置到 localStorage
-  localStorage.setItem('darkMode', String(darkMode.value));
+  const theme = darkMode.value ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('theme', theme);
 }
 
 function openSettings() {
@@ -302,18 +302,17 @@ onMounted(async () => {
     nsfw.value = savedNsfw === 'true';
   }
   
-  const savedDarkMode = localStorage.getItem('darkMode');
-  if (savedDarkMode !== null) {
-    darkMode.value = savedDarkMode === 'true';
+  // 加载暗色模式设置
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) {
+    darkMode.value = savedTheme === 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
   } else {
     // 检查系统主题偏好
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      darkMode.value = true;
-    }
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    darkMode.value = prefersDark;
+    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
   }
-  
-  // 应用初始主题
-  document.documentElement.classList.toggle('dark', darkMode.value);
   
   // 获取应用版本
   try {
@@ -347,7 +346,7 @@ function showCompletionNotification() {
   if (notificationContainer) {
     // 创建通知元素
     const notification = document.createElement('div');
-    notification.className = 'notification notification-success';
+    notification.className = 'notification notification-success bg-success text-success-content';
     notification.innerHTML = `
       <div class="notification-icon">
         <span class="icon-[tabler--check] size-5"></span>

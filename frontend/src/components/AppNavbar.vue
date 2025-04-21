@@ -1,28 +1,27 @@
 <template>
   <!-- 导航栏 -->
-  <nav class="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow">
+  <nav class="sticky top-0 z-10 shadow bg-base-100">
     <div class="container mx-auto px-4 flex items-center justify-between h-16">
       <a href="#" class="flex items-center">
         <img src="/favicon.svg" alt="Stable Diffusion 模型管理器" class="h-7">
       </a>
       
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center gap-2">
         <button 
           type="button"
-          class="btn" 
-          :class="nsfw ? 'btn-primary' : 'btn-outline-primary'"
+          :class="nsfw ? 'btn btn-error' : 'btn btn-outline'"
+          title="NSFW内容控制"
           @click="toggleNsfw"
         >
-          <span 
-            class="inline-block me-1.5 size-4"
-            :class="nsfw ? 'icon-[tabler--eye]' : 'icon-[tabler--eye-off]'"
-          ></span>
+          <span class="icon-[tabler--eye-off] size-5 me-2" v-if="!nsfw"></span>
+          <span class="icon-[tabler--eye] size-5 me-2" v-else></span>
           <span>NSFW {{ nsfw ? '已开启' : '已关闭' }}</span>
         </button>
 
         <button 
           type="button"
-          class="btn btn-icon btn-ghost"
+          class="btn btn-icon btn-outline btn-neutral"
+          title="设置"
           @click="onOpenSettings"
         >
           <span class="icon-[tabler--settings] size-5"></span>
@@ -30,18 +29,18 @@
 
         <button 
           type="button"
-          class="btn btn-icon btn-ghost"
+          class="btn btn-icon btn-outline btn-neutral"
+          title="切换主题"
           @click="toggleDarkMode"
         >
-          <span 
-            class="size-5"
-            :class="darkMode ? 'icon-[tabler--moon]' : 'icon-[tabler--sun]'"
-          ></span>
+          <span class="icon-[tabler--sun] size-5" v-if="!darkMode"></span>
+          <span class="icon-[tabler--moon] size-5" v-else></span>
         </button>
         
         <button 
           type="button"
-          class="btn btn-icon btn-ghost lg:hidden"
+          class="btn btn-icon btn-outline btn-accent lg:hidden"
+          title="筛选器"
           @click="onOpenFilterSidebar"
         >
           <span class="icon-[tabler--filter] size-5"></span>
