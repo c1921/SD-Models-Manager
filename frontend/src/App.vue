@@ -1,423 +1,54 @@
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- 导航栏 -->
-    <nav class="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow">
-      <div class="container mx-auto px-4 flex items-center justify-between h-16">
-        <a href="#" class="flex items-center">
-          <img src="/favicon.svg" alt="Stable Diffusion 模型管理器" class="h-7">
-        </a>
-        
-        <div class="flex items-center space-x-3">
-          <button 
-            type="button"
-            class="btn" 
-            :class="nsfw ? 'btn-primary' : 'btn-outline-primary'"
-            @click="toggleNsfw"
-          >
-            <span 
-              class="inline-block me-1.5 size-4"
-              :class="nsfw ? 'icon-[tabler--eye]' : 'icon-[tabler--eye-off]'"
-            ></span>
-            <span>NSFW {{ nsfw ? '已开启' : '已关闭' }}</span>
-          </button>
+    <!-- 使用导航栏组件 -->
+    <AppNavbar
+      :nsfw="nsfw"
+      :dark-mode="darkMode"
+      @toggle-nsfw="toggleNsfw"
+      @toggle-dark-mode="toggleDarkMode"
+      @open-settings="openSettings"
+      @open-filter-sidebar="openFilterSidebar"
+    />
 
-          <button 
-            type="button"
-            class="btn btn-icon btn-ghost"
-            @click="openSettings"
-          >
-            <span class="icon-[tabler--settings] size-5"></span>
-          </button>
+    <!-- 设置模态窗组件 -->
+    <SettingsModal
+      ref="settingsModalRef"
+      :app-version="appVersion"
+      :model-path="modelPath"
+      @update:model-path="modelPath = $event"
+      @scan-models="scanModelsAndClose"
+    />
 
-          <button 
-            type="button"
-            class="btn btn-icon btn-ghost"
-            @click="toggleDarkMode"
-          >
-            <span 
-              class="size-5"
-              :class="darkMode ? 'icon-[tabler--moon]' : 'icon-[tabler--sun]'"
-            ></span>
-          </button>
-          
-          <button 
-            type="button"
-            class="btn btn-icon btn-ghost lg:hidden"
-            @click="openFilterSidebar"
-          >
-            <span class="icon-[tabler--filter] size-5"></span>
-          </button>
-        </div>
-      </div>
-    </nav>
-
-    <!-- 设置模态窗 -->
-    <button 
-      ref="settingsModalTrigger" 
-      type="button" 
-      class="hidden" 
-      aria-haspopup="dialog" 
-      aria-expanded="false" 
-      aria-controls="settings-modal" 
-      data-overlay="#settings-modal"
-    ></button>
-
-    <div 
-      id="settings-modal" 
-      class="overlay modal overlay-open:opacity-100 hidden overlay-open:duration-300" 
-      role="dialog" 
-      tabindex="-1"
-    >
-      <div class="modal-dialog overlay-open:opacity-100 overlay-open:duration-300">
-        <div class="modal-content bg-gray-50 dark:bg-gray-800">
-          <div class="modal-header border-b border-gray-200 dark:border-gray-700">
-            <h3 class="modal-title">设置</h3>
-            <button 
-              type="button" 
-              class="btn btn-text btn-circle btn-sm absolute end-3 top-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300" 
-              aria-label="关闭" 
-              data-overlay="#settings-modal"
-            >
-              <span class="icon-[tabler--x] size-4"></span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <nav class="tabs tabs-bordered overflow-x-auto" aria-label="设置标签" role="tablist" aria-orientation="horizontal">
-              <button 
-                type="button" 
-                class="tab active-tab:tab-active active" 
-                id="path-tab-item" 
-                data-tab="#path-tab-content" 
-                aria-controls="path-tab-content" 
-                role="tab" 
-                aria-selected="true"
-              >
-                <span class="icon-[tabler--folder] size-5 shrink-0 me-2"></span>
-                路径设置
-              </button>
-              <button 
-                type="button" 
-                class="tab active-tab:tab-active" 
-                id="about-tab-item" 
-                data-tab="#about-tab-content" 
-                aria-controls="about-tab-content" 
-                role="tab" 
-                aria-selected="false"
-              >
-                <span class="icon-[tabler--info-circle] size-5 shrink-0 me-2"></span>
-                关于
-              </button>
-            </nav>
-            
-            <div class="mt-4">
-              <div id="path-tab-content" role="tabpanel" aria-labelledby="path-tab-item">
-                <div class="mb-6">
-                  <label for="modelPath" class="label">
-                    <span class="label-text font-medium text-gray-700 dark:text-gray-300">模型目录</span>
-                  </label>
-                  <div class="flex items-center space-x-2">
-                    <input 
-                      id="modelPath"
-                      type="text" 
-                      class="input input-bordered flex-1 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300" 
-                      placeholder="请选择模型目录" 
-                      readonly 
-                      v-model="modelPath"
-                    >
-                    <button 
-                      type="button" 
-                      class="btn btn-primary" 
-                      @click="selectPath"
-                    >
-                      <span class="icon-[tabler--folder-open] me-1.5 size-4"></span>
-                      浏览
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div id="about-tab-content" class="hidden" role="tabpanel" aria-labelledby="about-tab-item">
-                <div class="flex flex-col items-center py-4">
-                  <img src="/favicon.svg" alt="logo" class="h-16 mb-3">
-                  <h5 class="text-lg font-medium mb-2 text-gray-800 dark:text-gray-200">SD Models Manager</h5>
-                  <p class="text-gray-600 dark:text-gray-400 mb-3">版本 <span>{{ appVersion }}</span></p>
-                  <p class="mb-2">
-                    <a href="https://github.com/c1921/SD-Models-Manager" target="_blank" class="text-primary hover:text-primary-dark flex items-center">
-                      <span class="icon-[tabler--brand-github] inline-block me-1.5 size-5"></span>
-                      GitHub
-                    </a>
-                  </p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">MIT 开源许可 - 版权所有 (c) 2025</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer border-t border-gray-200 dark:border-gray-700">
-            <button 
-              type="button" 
-              class="btn btn-soft btn-secondary text-gray-700 dark:text-gray-300" 
-              data-overlay="#settings-modal"
-            >
-              关闭
-            </button>
-            <button 
-              type="button" 
-              class="btn btn-primary"
-              @click="scanModelsAndClose"
-              data-overlay="#settings-modal"
-            >
-              扫描模型
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 模型详情模态框 -->
-    <button 
-      ref="modelDetailTrigger" 
-      type="button" 
-      class="hidden" 
-      aria-haspopup="dialog" 
-      aria-expanded="false" 
-      aria-controls="model-detail-modal" 
-      data-overlay="#model-detail-modal"
-    ></button>
-
-    <div 
-      id="model-detail-modal" 
-      class="overlay modal overlay-open:opacity-100 hidden overlay-open:duration-300" 
-      role="dialog" 
-      tabindex="-1"
-    >
-      <div class="modal-dialog overlay-open:opacity-100 overlay-open:duration-300 max-w-4xl">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3 class="modal-title">{{ selectedModel?.name || '' }}</h3>
-            <button 
-              type="button" 
-              class="btn btn-text btn-circle btn-sm absolute end-3 top-3" 
-              aria-label="关闭" 
-              data-overlay="#model-detail-modal"
-              @click="closeModelDetail"
-            >
-              <span class="icon-[tabler--x] size-4"></span>
-            </button>
-          </div>
-          <div class="modal-body">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div class="md:col-span-2">
-                <img 
-                  v-if="selectedModel?.preview" 
-                  :src="selectedModel.preview" 
-                  class="w-full rounded-lg" 
-                  :alt="selectedModel?.name">
-                <div 
-                  v-else 
-                  class="flex flex-col items-center justify-center p-12 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                  <span class="icon-[tabler--photo] size-12 text-gray-400"></span>
-                  <p class="mt-3 text-gray-500">无预览图</p>
-                </div>
-              </div>
-              <div>
-                <div v-if="selectedModel" class="flex flex-col space-y-3">
-                  <p><span class="font-medium">文件名:</span> {{ selectedModel.filename }}</p>
-                  <p><span class="font-medium">模型类型:</span> {{ selectedModel.type }}</p>
-                  <p v-if="selectedModel.size"><span class="font-medium">文件大小:</span> {{ formatFileSize(selectedModel.size) }}</p>
-                  <p v-if="selectedModel.created_at"><span class="font-medium">创建时间:</span> {{ formatDate(selectedModel.created_at) }}</p>
-                  <p v-if="selectedModel.hash"><span class="font-medium">哈希值:</span> {{ selectedModel.hash }}</p>
-                  <p v-if="selectedModel.base_model"><span class="font-medium">基础模型:</span> {{ selectedModel.base_model }}</p>
-                  <div v-if="selectedModel.tags && selectedModel.tags.length > 0">
-                    <span class="font-medium">标签:</span>
-                    <div class="mt-2 flex flex-wrap gap-1">
-                      <span 
-                        v-for="tag in selectedModel.tags" 
-                        :key="tag"
-                        class="badge badge-neutral"
-                      >{{ tag }}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button 
-              type="button" 
-              class="btn btn-soft btn-secondary" 
-              data-overlay="#model-detail-modal"
-              @click="closeModelDetail"
-            >
-              关闭
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 模型详情模态框组件 -->
+    <ModelDetailModal
+      ref="modelDetailModalRef"
+      :model="selectedModel"
+      @close="closeModelDetail"
+    />
 
     <div class="container mx-auto px-4 py-6">
       <div class="flex flex-col lg:flex-row">
-        <!-- 主内容区 -->
+        <!-- 主内容区 - 模型列表组件 -->
         <div class="flex-1">
-          <div v-if="error" class="alert alert-danger" role="alert">
-            <span class="icon-[tabler--alert-circle] me-2"></span>
-            {{ error }}
-          </div>
-
-          <div v-if="loading" class="text-center py-8">
-            <div class="w-full mb-4">
-              <div class="progress h-5">
-                <div 
-                  class="progress-bar progress-bar-striped progress-bar-animated" 
-                  role="progressbar" 
-                  :style="`width: ${progress}%`" 
-                  :aria-valuenow="progress" 
-                  aria-valuemin="0" 
-                  aria-valuemax="100"
-                >{{ progress }}%</div>
-              </div>
-            </div>
-            <div class="text-gray-500">{{ progressMessage }}</div>
-          </div>
-
-          <!-- 模型列表 -->
-          <div v-if="!loading && models.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-8">
-            <div v-for="model in filteredModels" :key="model.id">
-              <div 
-                class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col"
-                @click="openModelDetails(model)"
-              >
-                <div class="relative">
-                  <img 
-                    v-if="model.preview && (nsfw || !model.nsfw)" 
-                    :src="model.preview" 
-                    class="w-full h-48 object-cover rounded-t-lg" 
-                    :alt="model.name">
-                  <div 
-                    v-else 
-                    class="flex items-center justify-center h-48 bg-gray-100 dark:bg-gray-700 rounded-t-lg">
-                    <span class="icon-[tabler--photo] size-10 text-gray-400"></span>
-                  </div>
-                  <div 
-                    v-if="model.nsfw" 
-                    class="badge badge-danger absolute top-2 right-2"
-                  >NSFW</div>
-                </div>
-                <div class="p-4 flex-1">
-                  <h3 class="text-base font-medium truncate">{{ model.name }}</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">{{ model.filename }}</p>
-                </div>
-                <div class="flex justify-between items-center px-4 py-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500">
-                  <span>{{ model.type }}</span>
-                  <span v-if="model.size">{{ formatFileSize(model.size) }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 空状态 -->
-          <div class="flex flex-col items-center justify-center py-16" v-if="!loading && models.length === 0">
-            <div class="text-center">
-              <div class="text-center mb-4">
-                <span class="icon-[tabler--database-x] text-gray-300 text-6xl"></span>
-              </div>
-              <h4 class="text-lg font-medium mb-2">未找到模型</h4>
-              <p class="text-gray-500 mb-4">请在设置中选择模型目录并进行扫描</p>
-              <button 
-                type="button"
-                class="btn btn-primary"
-                @click="openSettings"
-              >
-                <span class="icon-[tabler--settings] inline-block me-1.5 size-4"></span>
-                打开设置
-              </button>
-            </div>
-          </div>
+          <ModelList
+            :models="models"
+            :filtered-models="filteredModels"
+            :loading="loading"
+            :progress="progress"
+            :progress-message="progressMessage"
+            :error="error"
+            :nsfw="nsfw"
+            @model-click="openModelDetails"
+            @open-settings="openSettings"
+          />
         </div>
 
-        <!-- 侧边栏 -->
-        <div 
-          v-if="models.length > 0" 
-          class="hidden lg:block w-1/4 border-l border-gray-200 dark:border-gray-700 pl-6 bg-gray-50 dark:bg-gray-800"
-        >
-          <div class="sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto">
-            <div class="pb-3 mb-3 border-b border-gray-200 dark:border-gray-700">
-              <span class="text-lg font-medium">筛选器</span>
-            </div>
-            <!-- 筛选器容器 -->
-            <div>
-              <div v-for="(filter, key) in filters" :key="key" class="mb-6">
-                <h6 class="text-base font-medium mb-2">{{ filter.label }}</h6>
-                <div class="space-y-2">
-                  <div v-for="option in filter.options" :key="option.value" class="flex items-center gap-2">
-                    <input 
-                      type="checkbox" 
-                      class="checkbox checkbox-primary" 
-                      :id="`filter-${key}-${option.value}`"
-                      :value="option.value"
-                      v-model="filter.selected"
-                    />
-                    <label class="label-text text-base" :for="`filter-${key}-${option.value}`">
-                      {{ option.label }} ({{ option.count }})
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 移动端筛选器抽屉 -->
-    <button 
-      ref="filterSidebarTrigger" 
-      type="button" 
-      class="hidden" 
-      aria-controls="filter-sidebar" 
-      data-drawer="#filter-sidebar"
-    ></button>
-
-    <div 
-      id="filter-sidebar" 
-      class="drawer drawer-end"
-      role="dialog" 
-      aria-modal="true" 
-      tabindex="-1"
-    >
-      <div class="drawer-dialog">
-        <div class="drawer-content">
-          <div class="drawer-header">
-            <h5 class="drawer-title">筛选器</h5>
-            <button 
-              type="button" 
-              class="btn btn-text btn-circle btn-sm" 
-              aria-label="关闭" 
-              data-drawer="#filter-sidebar"
-            >
-              <span class="icon-[tabler--x] size-4"></span>
-            </button>
-          </div>
-          <div class="drawer-body">
-            <div v-for="(filter, key) in filters" :key="`mobile-${key}`" class="mb-6">
-              <h6 class="text-base font-medium mb-2">{{ filter.label }}</h6>
-              <div class="space-y-2">
-                <div v-for="option in filter.options" :key="`mobile-${option.value}`" class="flex items-center gap-2">
-                  <input 
-                    type="checkbox" 
-                    class="checkbox checkbox-primary" 
-                    :id="`mobile-filter-${key}-${option.value}`"
-                    :value="option.value"
-                    v-model="filter.selected"
-                  />
-                  <label class="label-text text-base" :for="`mobile-filter-${key}-${option.value}`">
-                    {{ option.label }} ({{ option.count }})
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <!-- 筛选器侧边栏组件 -->
+        <FilterSidebar 
+          ref="filterSidebarRef"
+          :filters="filters"
+          :model-count="models.length"
+        />
       </div>
     </div>
 
@@ -430,6 +61,11 @@
 import { ref, computed, onMounted, reactive, watch, onUnmounted } from 'vue';
 import { ModelsAPI } from './api/models';
 import type { Model } from './api/models';
+import FilterSidebar from './components/FilterSidebar.vue';
+import ModelList from './components/ModelList.vue';
+import ModelDetailModal from './components/ModelDetailModal.vue';
+import AppNavbar from './components/AppNavbar.vue';
+import SettingsModal from './components/SettingsModal.vue';
 
 // 类型定义
 interface FilterOption {
@@ -459,9 +95,9 @@ let scanInterval: number | null = null;
 let currentScanTaskId: string | null = null;
 
 // UI状态控制
-const modelDetailTrigger = ref<HTMLButtonElement | null>(null);
-const settingsModalTrigger = ref<HTMLButtonElement | null>(null);
-const filterSidebarTrigger = ref<HTMLButtonElement | null>(null);
+const filterSidebarRef = ref<InstanceType<typeof FilterSidebar> | null>(null);
+const modelDetailModalRef = ref<InstanceType<typeof ModelDetailModal> | null>(null);
+const settingsModalRef = ref<InstanceType<typeof SettingsModal> | null>(null);
 
 // 筛选器状态
 const filters = reactive<Record<string, Filter>>({
@@ -550,18 +186,15 @@ function toggleDarkMode() {
   localStorage.setItem('darkMode', String(darkMode.value));
 }
 
-async function selectPath() {
-  try {
-    modelPath.value = await ModelsAPI.selectModelPath();
-  } catch (e) {
-    console.error('选择模型目录失败', e);
-    error.value = '选择模型目录失败';
+function openSettings() {
+  if (settingsModalRef.value) {
+    settingsModalRef.value.open();
   }
 }
 
-function openSettings() {
-  if (settingsModalTrigger.value) {
-    settingsModalTrigger.value.click();
+function openFilterSidebar() {
+  if (filterSidebarRef.value) {
+    filterSidebarRef.value.openFilterSidebar();
   }
 }
 
@@ -646,31 +279,14 @@ async function loadModelPath() {
 
 function openModelDetails(model: Model) {
   selectedModel.value = model;
-  // 触发模态框打开
-  if (modelDetailTrigger.value) {
-    modelDetailTrigger.value.click();
+  // 打开模型详情模态框
+  if (modelDetailModalRef.value) {
+    modelDetailModalRef.value.open();
   }
 }
 
 function closeModelDetail() {
   selectedModel.value = null;
-}
-
-function formatFileSize(size: number): string {
-  if (size < 1024) return size + ' B';
-  if (size < 1024 * 1024) return (size / 1024).toFixed(2) + ' KB';
-  if (size < 1024 * 1024 * 1024) return (size / (1024 * 1024)).toFixed(2) + ' MB';
-  return (size / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString();
-}
-
-function openFilterSidebar() {
-  if (filterSidebarTrigger.value) {
-    filterSidebarTrigger.value.click();
-  }
 }
 
 // 监听模型列表变化
@@ -753,5 +369,3 @@ function showCompletionNotification() {
   }
 }
 </script>
-
-
