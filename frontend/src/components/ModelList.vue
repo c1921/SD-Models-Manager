@@ -30,15 +30,15 @@
           class="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col"
           @click="onModelClick(model)"
         >
-          <div class="relative">
+          <div class="relative pt-[130%]">
             <img 
               v-if="model.preview && (nsfw || !model.nsfw)" 
               :src="model.preview" 
-              class="w-full h-48 object-cover rounded-t-lg" 
+              class="absolute inset-0 w-full h-full object-cover rounded-t-lg" 
               :alt="model.name">
             <div 
               v-else 
-              class="flex items-center justify-center h-48 bg-gray-100 dark:bg-gray-700 rounded-t-lg">
+              class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-t-lg">
               <span class="icon-[tabler--photo] size-10 text-gray-400"></span>
             </div>
             <div 
@@ -48,10 +48,13 @@
           </div>
           <div class="p-4 flex-1">
             <h3 class="text-base font-medium truncate">{{ model.name }}</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">{{ model.filename }}</p>
+            <div class="flex flex-col gap-1 mt-2">
+              <div class="text-sm text-gray-700 dark:text-gray-300">类型: {{ model.type }}</div>
+              <div class="text-sm text-gray-700 dark:text-gray-300">基础模型: {{ model.base_model }}</div>
+            </div>
           </div>
           <div class="flex justify-between items-center px-4 py-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500">
-            <span>{{ model.type }}</span>
+            <span class="truncate max-w-[70%]">{{ model.filename }}</span>
             <span v-if="model.size">{{ formatFileSize(model.size) }}</span>
           </div>
         </div>

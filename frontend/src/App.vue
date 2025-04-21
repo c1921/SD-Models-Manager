@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="min-h-screen h-screen flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden">
     <!-- 使用导航栏组件 -->
     <AppNavbar
       :nsfw="nsfw"
@@ -26,10 +26,10 @@
       @close="closeModelDetail"
     />
 
-    <div class="container mx-auto px-4 py-6">
-      <div class="flex flex-col lg:flex-row">
-        <!-- 主内容区 - 模型列表组件 -->
-        <div class="flex-1">
+    <div class="flex-1 container-fluid flex flex-col lg:flex-row overflow-hidden">
+      <!-- 主内容区 - 模型列表组件 -->
+      <div class="flex-1 overflow-hidden">
+        <div class="h-full overflow-y-auto px-4 py-6">
           <ModelList
             :models="models"
             :filtered-models="filteredModels"
@@ -42,14 +42,14 @@
             @open-settings="openSettings"
           />
         </div>
-
-        <!-- 筛选器侧边栏组件 -->
-        <FilterSidebar 
-          ref="filterSidebarRef"
-          :filters="filters"
-          :model-count="models.length"
-        />
       </div>
+
+      <!-- 筛选器侧边栏组件 -->
+      <FilterSidebar 
+        ref="filterSidebarRef"
+        :filters="filters"
+        :model-count="models.length"
+      />
     </div>
 
     <!-- 提示消息容器 -->

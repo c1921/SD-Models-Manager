@@ -2,10 +2,10 @@
   <!-- 桌面版筛选器侧边栏 -->
   <div 
     v-if="modelCount > 0" 
-    class="hidden lg:block w-1/4 border-l border-gray-200 dark:border-gray-700 pl-6 bg-gray-50 dark:bg-gray-800"
+    class="hidden lg:block w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 h-full overflow-hidden"
   >
-    <div class="sticky top-20 h-[calc(100vh-5rem)] overflow-y-auto">
-      <div class="pb-3 mb-3 border-b border-gray-200 dark:border-gray-700">
+    <div class="h-full overflow-y-auto px-6 py-4">
+      <div class="mb-3 border-b border-gray-200 dark:border-gray-700 pb-3">
         <span class="text-lg font-medium">筛选器</span>
       </div>
       <!-- 筛选器容器 -->
@@ -31,18 +31,21 @@
     </div>
   </div>
 
-  <!-- 移动端筛选器抽屉 -->
+  <!-- 移动端筛选器抽屉触发器（隐藏） -->
   <button 
     ref="filterSidebarTrigger" 
     type="button" 
     class="hidden" 
+    aria-haspopup="dialog" 
+    aria-expanded="false" 
     aria-controls="filter-sidebar" 
-    data-drawer="#filter-sidebar"
+    data-overlay="#filter-sidebar"
   ></button>
 
-  <div 
+  <!-- 移动端筛选器抽屉 -->
+  <aside 
     id="filter-sidebar" 
-    class="drawer drawer-end"
+    class="overlay overlay-open:translate-x-0 drawer drawer-end max-w-72 hidden" 
     role="dialog" 
     aria-modal="true" 
     tabindex="-1"
@@ -55,7 +58,7 @@
             type="button" 
             class="btn btn-text btn-circle btn-sm" 
             aria-label="关闭" 
-            data-drawer="#filter-sidebar"
+            data-overlay="#filter-sidebar"
           >
             <span class="icon-[tabler--x] size-4"></span>
           </button>
@@ -81,7 +84,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </aside>
 </template>
 
 <script setup lang="ts">
