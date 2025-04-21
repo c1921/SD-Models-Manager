@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineExpose } from 'vue';
+import { ref } from 'vue';
 
 // 类型定义
 interface FilterOption {

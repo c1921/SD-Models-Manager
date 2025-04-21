@@ -123,7 +123,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineExpose } from 'vue';
+import { ref } from 'vue';
 import { ModelsAPI } from '../api/models';
 
 // 属性和事件定义
