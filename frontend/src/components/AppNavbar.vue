@@ -1,7 +1,7 @@
 <template>
   <!-- 导航栏 -->
   <nav class="sticky top-0 z-10 shadow bg-base-100">
-    <div class="container mx-auto px-1 flex items-center justify-between h-16">
+    <div class="px-4 sm:px-6 md:px-8 flex items-center justify-between h-16 mx-auto max-w-[1400px]">
       <a href="#" class="flex items-center">
         <img src="/favicon.svg" alt="Stable Diffusion 模型管理器" class="h-7">
       </a>
@@ -9,31 +9,40 @@
       <div class="flex items-center gap-2">
         <button 
           type="button"
-          :class="nsfw ? 'btn btn-error' : 'btn btn-outline'"
+          :class="[
+            'btn', 
+            nsfw ? 'btn-error' : 'btn-outline',
+            'btn-icon md:btn-normal'
+          ]"
           title="NSFW内容控制"
           @click="toggleNsfw"
         >
-          <span class="icon-[tabler--eye-off] size-5 me-2" v-if="!nsfw"></span>
-          <span class="icon-[tabler--eye] size-5 me-2" v-else></span>
-          <span>NSFW {{ nsfw ? '已开启' : '已关闭' }}</span>
+          <span class="icon-[tabler--eye-off] size-5" v-if="!nsfw"></span>
+          <span class="icon-[tabler--eye] size-5" v-else></span>
+          <span class="hidden md:inline ml-2">NSFW {{ nsfw ? '已开启' : '已关闭' }}</span>
         </button>
 
         <button 
           type="button"
-          :class="blurNsfw ? 'btn btn-outline btn-neutral' : 'btn btn-outline btn-error'" 
+          :class="[
+            'btn',
+            'btn-outline', 
+            'btn-icon md:btn-normal',
+            blurNsfw ? '' : 'btn-error'
+          ]"
           title="NSFW图片模糊控制"
           @click="toggleBlurNsfw"
         >
-          <span class="icon-[tabler--blur] size-5 me-1.5" v-if="blurNsfw"></span>
-          <span class="icon-[tabler--blur-off] size-5 me-1.5" v-else></span>
-          <span>模糊{{ blurNsfw ? '开' : '关' }}</span>
+          <span class="icon-[tabler--blur] size-5" v-if="blurNsfw"></span>
+          <span class="icon-[tabler--blur-off] size-5" v-else></span>
+          <span class="hidden md:inline ml-2">模糊{{ blurNsfw ? '开' : '关' }}</span>
         </button>
 
-        <div class="w-3"></div>
+        <div class="w-3 hidden md:block"></div>
 
         <button 
           type="button"
-          class="btn btn-icon btn-outline btn-neutral"
+          class="btn btn-icon btn-outline"
           title="设置"
           @click="onOpenSettings"
         >
@@ -42,7 +51,7 @@
 
         <button 
           type="button"
-          class="btn btn-icon btn-outline btn-neutral"
+          class="btn btn-icon btn-outline"
           title="切换主题"
           @click="toggleDarkMode"
         >
