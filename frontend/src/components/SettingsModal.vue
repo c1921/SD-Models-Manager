@@ -82,6 +82,17 @@
                   </button>
                 </div>
               </div>
+              <div class="flex justify-end">
+                <button 
+                  type="button" 
+                  class="btn btn-primary"
+                  @click="scanModels"
+                  data-overlay="#settings-modal"
+                >
+                  <span class="icon-[tabler--radar] me-1.5 size-4"></span>
+                  扫描模型
+                </button>
+              </div>
             </div>
             
             <div id="about-tab-content" class="hidden" role="tabpanel" aria-labelledby="about-tab-item">
@@ -99,23 +110,6 @@
               </div>
             </div>
           </div>
-        </div>
-        <div class="modal-footer border-t border-base-200">
-          <button 
-            type="button" 
-            class="btn btn-outline" 
-            data-overlay="#settings-modal"
-          >
-            关闭
-          </button>
-          <button 
-            type="button" 
-            class="btn btn-primary"
-            @click="scanModels"
-            data-overlay="#settings-modal"
-          >
-            扫描模型
-          </button>
         </div>
       </div>
     </div>
