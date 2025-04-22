@@ -11,6 +11,9 @@ from src.version.version import VERSION_STR, COMPANY, COPYRIGHT
 class PathUpdate(BaseModel):
     path: str
 
+class ModelIdParam(BaseModel):
+    model_id: str
+
 def create_api(manager, frontend_url=None):
     """创建并配置FastAPI应用
     
@@ -139,6 +142,15 @@ def create_api(manager, frontend_url=None):
             "models_path": str(manager.models_path) if manager.models_path else "",
             "is_path_valid": os.path.exists(manager.models_path) if manager.models_path else False
         }
+
+    @app.post("/api/toggle-nsfw")
+    async def toggle_model_nsfw(model_param: ModelIdParam):
+        """切换模型的NSFW状态"""
+        try:
+            new_state = manager.toggle_custom_nsfw(model_param.model_id)
+            return {"success": True, "model_id": model_param.model_id, "nsfw": new_state}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"设置NSFW状态失败: {str(e)}")
 
     @app.get("/api/select-path")
     async def select_path_endpoint():

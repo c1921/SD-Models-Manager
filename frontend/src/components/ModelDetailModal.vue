@@ -19,7 +19,14 @@
     <div class="modal-dialog overlay-open:opacity-100 overlay-open:duration-300 max-w-4xl">
       <div class="modal-content bg-base-100">
         <div class="modal-header border-b border-base-200">
-          <h3 class="modal-title text-base-content">{{ model?.name || '' }}</h3>
+          <h3 class="modal-title text-base-content">
+            {{ model?.name || '' }}
+            <span 
+              v-if="model?.nsfw" 
+              class="badge ms-2 align-middle" 
+              :class="model.custom_nsfw ? 'badge-warning' : 'badge-error'"
+            >NSFW</span>
+          </h3>
           <button 
             type="button" 
             class="btn btn-text btn-circle btn-sm absolute end-3 top-3 text-base-content/70 hover:text-base-content" 

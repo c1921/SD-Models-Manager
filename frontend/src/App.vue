@@ -44,6 +44,7 @@
             :blur-nsfw="blurNsfw"
             @model-click="openModelDetails"
             @open-settings="openSettings"
+            @model-updated="handleModelUpdated"
           />
         </div>
       </div>
@@ -307,6 +308,15 @@ function openModelDetails(model: Model) {
 
 function closeModelDetail() {
   selectedModel.value = null;
+}
+
+// 处理模型更新
+function handleModelUpdated(updatedModel: Model) {
+  // 查找并更新模型列表中的对应模型
+  const index = models.value.findIndex(model => model.id === updatedModel.id);
+  if (index !== -1) {
+    models.value[index] = { ...models.value[index], ...updatedModel };
+  }
 }
 
 // 监听模型列表变化

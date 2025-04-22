@@ -18,6 +18,8 @@ export interface Model {
   size?: number;
   preview?: string;
   nsfw?: boolean;
+  custom_nsfw?: boolean;
+  original_nsfw?: boolean;
   created_at?: string;
   hash?: string;
   tags?: string[];
@@ -32,6 +34,8 @@ interface BackendModel {
   type: string;
   preview_url?: string;
   nsfw?: boolean;
+  custom_nsfw?: boolean;
+  original_nsfw?: boolean;
   baseModel?: string;
   url?: string;
   nsfwLevel?: number;
@@ -49,6 +53,8 @@ function convertModel(backendModel: BackendModel): Model {
     type: backendModel.type,
     preview: backendModel.preview_url,
     nsfw: backendModel.nsfw || false,
+    custom_nsfw: backendModel.custom_nsfw || false,
+    original_nsfw: backendModel.original_nsfw || false,
     base_model: backendModel.baseModel,
     url: backendModel.url
   };
@@ -184,5 +190,11 @@ export const ModelsAPI = {
   getVersion: async (): Promise<{version: string; company: string; copyright: string}> => {
     const response = await apiClient.get('/version');
     return response.data;
+  },
+
+  // 切换模型的自定义NSFW状态
+  toggleModelNsfw: async (modelId: string): Promise<{nsfw: boolean}> => {
+    const response = await apiClient.post('/toggle-nsfw', { model_id: modelId });
+    return { nsfw: response.data.nsfw };
   }
 }; 

@@ -44,8 +44,20 @@
             </div>
             <div 
               v-if="model.nsfw" 
-              class="badge badge-error absolute top-2 right-2 z-10"
+              class="badge absolute top-2 right-2 z-10"
+              :class="model.custom_nsfw ? 'badge-warning' : 'badge-error'"
             >NSFW</div>
+            
+            <!-- NSFW标记按钮 - 只在非原始NSFW模型上显示 -->
+            <button 
+              v-if="!model.original_nsfw"
+              class="absolute top-2 left-2 z-10 btn btn-circle btn-xs" 
+              :class="[model.custom_nsfw ? 'btn-warning' : 'btn-outline btn-neutral']"
+              title="标记/取消标记为NSFW内容"
+              @click.stop="toggleNsfw(model)"
+            >
+              <span class="icon-[tabler--eye-off] size-3.5"></span>
+            </button>
           </div>
           <div 
             class="p-4 flex-1 cursor-pointer"
@@ -102,6 +114,7 @@
 
 <script setup lang="ts">
 import type { Model } from '../api/models';
+import { ModelsAPI } from '../api/models';
 import toast from '../utils/toast';
 
 defineProps<{
@@ -118,6 +131,7 @@ defineProps<{
 const emit = defineEmits<{
   'open-settings': [];
   'model-click': [model: Model];
+  'model-updated': [model: Model];
 }>();
 
 function onOpenSettings() {
@@ -126,6 +140,32 @@ function onOpenSettings() {
 
 function onModelClick(model: Model) {
   emit('model-click', model);
+}
+
+async function toggleNsfw(model: Model) {
+  // 如果是原始NSFW模型，不允许更改
+  if (model.original_nsfw) {
+    toast.error('无法修改原始NSFW模型的状态');
+    return;
+  }
+  
+  try {
+    // 调用API切换NSFW状态
+    const result = await ModelsAPI.toggleModelNsfw(model.id);
+    
+    // 更新模型状态
+    model.custom_nsfw = result.nsfw;
+    model.nsfw = result.nsfw || model.original_nsfw; // 保持与原始NSFW状态一致
+    
+    // 通知父组件模型已更新
+    emit('model-updated', model);
+    
+    // 显示成功提示
+    toast.success(`已${result.nsfw ? '标记' : '取消标记'}为NSFW内容`);
+  } catch (error) {
+    console.error('切换NSFW状态失败:', error);
+    toast.error('切换NSFW状态失败');
+  }
 }
 
 function copyFileName(filename: string) {

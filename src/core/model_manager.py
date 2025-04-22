@@ -25,13 +25,15 @@ class ModelManager:
         # 添加并发限制和超时设置
         self.semaphore = asyncio.Semaphore(5)  # 限制并发请求数
         self.timeout = ClientTimeout(total=10)  # 10秒超时
+        # 添加自定义NSFW模型ID列表
+        self.custom_nsfw_models = self.config.get("custom_nsfw_models", [])
         
     def load_config(self) -> dict:
         """加载配置文件"""
         if os.path.exists(self.config_file):
             with open(self.config_file, "r", encoding="utf-8") as f:
                 return json.load(f)
-        return {"models_path": "", "output_file": "models_info.json"}
+        return {"models_path": "", "output_file": "models_info.json", "custom_nsfw_models": []}
     
     def save_config(self):
         """保存配置文件"""
@@ -212,7 +214,9 @@ class ModelManager:
                 "preview_url": None,
                 "description": "未找到模型信息",
                 "baseModel": "未知",
-                "nsfw": False,
+                "nsfw": str(model_path) in self.custom_nsfw_models,  # 检查是否在自定义NSFW列表中
+                "custom_nsfw": str(model_path) in self.custom_nsfw_models,  # 新增自定义NSFW标记
+                "original_nsfw": False,  # 新增原始NSFW标记
                 "nsfwLevel": 0,
             }
         
@@ -224,13 +228,19 @@ class ModelManager:
         # 添加本地图片路径
         local_preview = info.get("local_preview")
         
+        # 如果在自定义NSFW列表中，覆盖API返回的nsfw值
+        is_custom_nsfw = str(model_path) in self.custom_nsfw_models
+        is_original_nsfw = model_data.get("nsfw", False)
+        
         return {
             "name": model_data.get("name", Path(model_path).name),
             "type": model_data.get("type", "未知"),
             "preview_url": local_preview or preview_url,
             "baseModel": info.get("baseModel", "未知"),
-            "url": f"https://civitai.com/models/{info['modelId']}?modelVersionId={info['id']}",
-            "nsfw": model_data.get("nsfw", False),
+            "url": f"https://civitai.com/models/{info['modelId']}?modelVersionId={info['id']}" if 'modelId' in info and 'id' in info else None,
+            "nsfw": is_custom_nsfw or is_original_nsfw,  # 自定义NSFW或API返回的NSFW
+            "custom_nsfw": is_custom_nsfw,  # 新增自定义NSFW标记
+            "original_nsfw": is_original_nsfw,  # 新增原始NSFW标记
             "nsfwLevel": preview_image.get("nsfwLevel", 0),
         }
 
@@ -245,3 +255,40 @@ class ModelManager:
             for model_path in self.models_info.keys()
             if str(model_path).startswith(current_path)
         ] 
+
+    def toggle_custom_nsfw(self, model_path: str) -> bool:
+        """切换模型的自定义NSFW状态
+        
+        Args:
+            model_path: 模型路径
+            
+        Returns:
+            bool: 更新后的NSFW状态
+        """
+        model_path = str(model_path)  # 确保为字符串
+        
+        # 检查是否为原始NSFW模型
+        model_info = self.models_info.get(model_path, {})
+        if model_info:
+            info = model_info.get("info", {})
+            model_data = info.get("model", {})
+            is_original_nsfw = model_data.get("nsfw", False)
+            
+            # 如果是原始NSFW模型，不允许更改
+            if is_original_nsfw:
+                return True  # 保持NSFW状态
+        
+        if model_path in self.custom_nsfw_models:
+            # 如果模型已在自定义NSFW列表中，则移除
+            self.custom_nsfw_models.remove(model_path)
+            current_state = False
+        else:
+            # 否则添加到列表中
+            self.custom_nsfw_models.append(model_path)
+            current_state = True
+            
+        # 更新配置并保存
+        self.config["custom_nsfw_models"] = self.custom_nsfw_models
+        self.save_config()
+        
+        return current_state 
