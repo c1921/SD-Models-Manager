@@ -30,15 +30,34 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install pyinstaller
     
-    - name: Install Frontend dependencies and build
-      run: |
-        cd frontend
-        npm install
-        npm run build
+    # 注意：不需要提前构建前端，build.py 脚本会处理前端构建
+    # 只需要确保 Node.js 环境已设置好
       
     - name: Build with PyInstaller
-      run: python build.py
+      run: |
+        # 设置UTF-8编码
+        $Env:PYTHONIOENCODING = "utf-8"
+        python build.py
+      
+    - name: List dist directory
+      run: |
+        dir dist
+        echo "-----------------------------------"
+        if (Test-Path -Path "dist\frontend") {
+          echo "frontend directory exists"
+          dir dist\frontend
+        } else {
+          echo "frontend directory does NOT exist"
+        }
+        
+        if (Test-Path -Path "dist\static") {
+          echo "static directory exists"
+          dir dist\static
+        } else {
+          echo "static directory does NOT exist"
+        }
       
     - name: Create ZIP archive
       run: |
@@ -46,7 +65,30 @@ jobs:
         $VERSION = (Get-Item "SD_Models_Manager_v*.exe").BaseName
         New-Item -ItemType Directory -Path "$VERSION"
         Move-Item "SD_Models_Manager_v*.exe" "$VERSION"
-        Move-Item "static" "$VERSION"
+        
+        # 只在 frontend 目录存在时才移动它
+        if (Test-Path -Path "frontend") {
+          Move-Item "frontend" "$VERSION"
+          Write-Host "Moved frontend directory to package"
+        }
+        
+        # 只在 static 目录存在时才移动它
+        if (Test-Path -Path "static") {
+          Move-Item "static" "$VERSION"
+          Write-Host "Moved static directory to package"
+        }
+        
+        # 确保目录结构完整
+        if (-not (Test-Path -Path "$VERSION\static")) {
+          New-Item -ItemType Directory -Path "$VERSION\static"
+          New-Item -ItemType Directory -Path "$VERSION\static\images"
+          Write-Host "Created empty static directory structure in package"
+        }
+        
+        # 显示最终的包结构
+        Write-Host "Final package structure:"
+        dir "$VERSION" -Recurse
+        
         Compress-Archive -Path "$VERSION" -DestinationPath "$VERSION.zip"
         
     - name: Create Release
