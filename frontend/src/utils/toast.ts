@@ -2,7 +2,7 @@ import { Notyf } from 'notyf';
 
 // 创建Notyf实例
 const notyf = new Notyf({
-  duration: 20000,
+  duration: 2000,
   position: {
     x: 'right',
     y: 'top'
