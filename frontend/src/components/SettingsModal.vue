@@ -26,7 +26,7 @@
             aria-label="关闭" 
             data-overlay="#settings-modal"
           >
-            <span class="icon-[tabler--x] size-4"></span>
+            <span class="icon-[tabler--x] size-5"></span>
           </button>
         </div>
         <div class="modal-body">
@@ -63,35 +63,33 @@
                 <label for="modelPath" class="label">
                   <span class="label-text font-medium text-base-content">模型目录</span>
                 </label>
-                <div class="flex items-center space-x-2">
+                <div class="join w-full">
+                  <button 
+                    type="button" 
+                    class="btn btn-primary join-item"
+                    @click="selectPath"
+                  >
+                    <span class="icon-[tabler--folder-open] me-1.5 size-5"></span>
+                    浏览
+                  </button>
                   <input 
                     id="modelPath"
                     type="text" 
-                    class="input input-bordered flex-1 bg-base-100 text-base-content" 
+                    class="input input-bordered join-item flex-1 bg-base-100 text-base-content" 
                     placeholder="请选择模型目录" 
                     readonly 
                     :value="modelPath"
                   >
                   <button 
                     type="button" 
-                    class="btn btn-primary" 
-                    @click="selectPath"
+                    class="btn btn-primary join-item"
+                    @click="scanModels"
+                    data-overlay="#settings-modal"
                   >
-                    <span class="icon-[tabler--folder-open] me-1.5 size-4"></span>
-                    浏览
+                    <span class="icon-[tabler--radar] me-1.5 size-5"></span>
+                    扫描模型
                   </button>
                 </div>
-              </div>
-              <div class="flex justify-end">
-                <button 
-                  type="button" 
-                  class="btn btn-primary"
-                  @click="scanModels"
-                  data-overlay="#settings-modal"
-                >
-                  <span class="icon-[tabler--radar] me-1.5 size-4"></span>
-                  扫描模型
-                </button>
               </div>
             </div>
             

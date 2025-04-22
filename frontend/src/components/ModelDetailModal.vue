@@ -27,7 +27,7 @@
             data-overlay="#model-detail-modal"
             @click="onClose"
           >
-            <span class="icon-[tabler--x] size-4"></span>
+            <span class="icon-[tabler--x] size-5"></span>
           </button>
         </div>
         <div class="modal-body p-6">

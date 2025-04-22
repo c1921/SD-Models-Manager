@@ -93,7 +93,7 @@
           class="btn btn-primary"
           @click="onOpenSettings"
         >
-          <span class="icon-[tabler--settings] inline-block me-1.5 size-4"></span>
+          <span class="icon-[tabler--settings] inline-block me-1.5 size-5"></span>
           打开设置
         </button>
       </div>

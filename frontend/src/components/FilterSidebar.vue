@@ -60,7 +60,7 @@
             aria-label="关闭" 
             data-overlay="#filter-sidebar"
           >
-            <span class="icon-[tabler--x] size-4"></span>
+            <span class="icon-[tabler--x] size-5"></span>
           </button>
         </div>
         <div class="drawer-body">
