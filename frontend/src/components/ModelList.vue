@@ -9,18 +9,14 @@
     <!-- 加载进度条 -->
     <div v-if="loading" class="text-center py-8">
       <div class="w-full mb-4">
-        <div class="progress h-5">
+        <div class="w-full bg-base-200 rounded-full h-2.5">
           <div 
-            class="progress-bar progress-bar-striped progress-bar-animated bg-info" 
-            role="progressbar" 
-            :style="`width: ${progress}%`" 
-            :aria-valuenow="progress" 
-            aria-valuemin="0" 
-            aria-valuemax="100"
-          >{{ progress }}%</div>
+            class="bg-primary h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+            :style="`width: ${progress * 100}%`"
+          ></div>
         </div>
       </div>
-      <div>{{ progressMessage }}</div>
+      <div class="text-base-content/80">{{ progressMessage }}</div>
     </div>
 
     <!-- 模型列表 -->

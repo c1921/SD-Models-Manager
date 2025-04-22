@@ -59,6 +59,7 @@ class ModelManager:
         
         if not safetensors_files:
             print("未找到任何.safetensors文件")
+            yield f"data: {json.dumps({'progress': 1, 'message': '未找到任何模型文件', 'status': 'completed'})}\n\n"
             return
         
         print(f"找到 {len(safetensors_files)} 个模型文件")
@@ -75,7 +76,9 @@ class ModelManager:
                 if existing_info and existing_info.get("info", {}).get("mtime") == current_mtime:
                     print(f"文件 {file_path.name} 未修改，跳过扫描")
                     processed += 1
-                    yield f"data: {json.dumps({'progress': processed / total, 'message': f'跳过: {file_path.name}'})}\n\n"
+                    # 计算精确的进度：已处理的数量 / 总数量
+                    progress = processed / total
+                    yield f"data: {json.dumps({'progress': progress, 'message': f'跳过: {file_path.name}'})}\n\n"
                     continue
                 
                 model_hash = await self.hash_utils.calculate_model_hash_async(file_path)
@@ -83,12 +86,20 @@ class ModelManager:
                 await self.fetch_model_info(model_hash, file_path, current_mtime)
                 self.save_models_info()  # 每次获取新信息后保存
                 processed += 1
-                yield f"data: {json.dumps({'progress': processed / total, 'message': f'已处理: {file_path.name}'})}\n\n"
+                # 计算精确的进度：已处理的数量 / 总数量
+                progress = processed / total
+                yield f"data: {json.dumps({'progress': progress, 'message': f'已处理: {file_path.name}'})}\n\n"
             except Exception as e:
                 print(f"处理文件 {file_path.name} 时发生错误: {str(e)}")
                 processed += 1
-                yield f"data: {json.dumps({'progress': processed / total, 'message': f'错误: {file_path.name}'})}\n\n"
-            
+                # 计算精确的进度：已处理的数量 / 总数量
+                progress = processed / total
+                yield f"data: {json.dumps({'progress': progress, 'message': f'错误: {file_path.name}'})}\n\n"
+        
+        # 确保最后一个消息是完成状态，但不需要额外的100%消息了
+        if processed == total:
+            yield f"data: {json.dumps({'progress': 1, 'message': '扫描完成', 'status': 'completed'})}\n\n"
+    
     async def fetch_model_info(self, model_hash, file_path, mtime: float):
         """从Civitai API获取模型信息并下载预览图"""
         async with self.semaphore:  # 使用信号量限制并发

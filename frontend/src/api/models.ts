@@ -96,24 +96,56 @@ export const ModelsAPI = {
 
   // 扫描模型
   scanModels: async (): Promise<{ taskId: string }> => {
+    // 关闭之前可能存在的EventSource连接
+    const previousScan = (window as any).modelScanEventSource;
+    if (previousScan?.eventSource) {
+      previousScan.eventSource.close();
+    }
+    
     // 开始SSE扫描连接
     const eventSource = new EventSource('/api/scan');
+    const taskId = Date.now().toString(); // 生成唯一任务ID
     
-    return new Promise<{ taskId: string }>((resolve) => {
-      const taskId = Date.now().toString(); // 生成唯一任务ID
-      
-      // 将事件源存储在全局以便后续获取状态
-      (window as any).modelScanEventSource = {
-        eventSource,
-        taskId,
-        listeners: {},
-        completed: false,
-        progress: 0,
-        message: '开始扫描...'
-      };
-      
-      resolve({ taskId });
-    });
+    // 初始化任务状态
+    (window as any).modelScanEventSource = {
+      eventSource,
+      taskId,
+      listeners: {},
+      completed: false,
+      progress: 0,
+      message: '开始扫描...'
+    };
+    
+    // 立即添加事件监听器
+    eventSource.onmessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('收到扫描事件:', data); // 调试日志
+        
+        // 更新全局状态
+        const scanState = (window as any).modelScanEventSource;
+        scanState.progress = data.progress || 0;
+        scanState.message = data.message || '';
+        
+        if (data.status === 'completed') {
+          console.log('扫描完成，进度:', scanState.progress); // 调试日志
+          scanState.completed = true;
+          eventSource.close();
+        }
+      } catch (e) {
+        console.error('解析事件数据出错', e);
+      }
+    };
+    
+    eventSource.onerror = (error) => {
+      console.error('扫描事件源错误:', error); // 调试日志
+      const scanState = (window as any).modelScanEventSource;
+      scanState.completed = true;
+      scanState.message = '扫描过程中出现错误';
+      eventSource.close();
+    };
+    
+    return { taskId };
   },
 
   // 获取扫描状态
@@ -124,37 +156,12 @@ export const ModelsAPI = {
     if (!scanState) {
       return { progress: 0, message: '未找到扫描任务', completed: true };
     }
-
-    // 如果是第一次调用，添加事件监听器
-    if (Object.keys(scanState.listeners).length === 0) {
-      const eventSource = scanState.eventSource;
-      
-      eventSource.onmessage = (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data);
-          scanState.progress = data.progress || 0;
-          scanState.message = data.message || '';
-          
-          if (data.status === 'completed') {
-            scanState.completed = true;
-            eventSource.close();
-          }
-        } catch (e) {
-          console.error('解析事件数据出错', e);
-        }
-      };
-      
-      eventSource.onerror = () => {
-        scanState.completed = true;
-        scanState.message = '扫描过程中出现错误';
-        eventSource.close();
-      };
-    }
     
+    // 进行深拷贝避免引用问题
     return {
-      progress: scanState.progress,
-      message: scanState.message,
-      completed: scanState.completed
+      progress: Number(scanState.progress) || 0,
+      message: scanState.message || '',
+      completed: Boolean(scanState.completed)
     };
   },
 

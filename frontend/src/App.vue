@@ -89,8 +89,7 @@ const progress = ref(0);
 const progressMessage = ref('');
 const error = ref('');
 const selectedModel = ref<Model | null>(null);
-let scanInterval: number | null = null;
-let currentScanTaskId: string | null = null;
+let scanInterval: ReturnType<typeof setInterval> | null = null;
 
 // UI状态控制
 const filterSidebarRef = ref<InstanceType<typeof FilterSidebar> | null>(null);
@@ -200,56 +199,68 @@ function scanModelsAndClose() {
   scanModels();
 }
 
-async function scanModels() {
+const scanModels = async () => {
   try {
+    // 清除可能的上一个轮询间隔
+    if (scanInterval !== null) {
+      clearInterval(scanInterval);
+      scanInterval = null;
+    }
+    
     loading.value = true;
     progress.value = 0;
     progressMessage.value = '正在扫描模型...';
-    error.value = '';
     
-    // 开始扫描
-    const { taskId } = await ModelsAPI.scanModels();
-    currentScanTaskId = taskId;
-    
-    // 轮询状态
-    if (scanInterval) {
-      clearInterval(scanInterval);
+    const response = await ModelsAPI.scanModels();
+    if (!response?.taskId) {
+      throw new Error('扫描任务创建失败');
     }
-    
-    scanInterval = window.setInterval(async () => {
-      if (!currentScanTaskId) return;
-      
+
+    // 设置轮询间隔
+    scanInterval = setInterval(async () => {
       try {
-        const status = await ModelsAPI.getScanStatus(currentScanTaskId);
+        const status = await ModelsAPI.getScanStatus(response.taskId);
+        console.log('轮询获取扫描状态:', status); // 调试日志
+        
+        // 确保进度值正确传递
         progress.value = status.progress;
         progressMessage.value = status.message;
-        
+
         if (status.completed) {
-          clearInterval(scanInterval as number);
-          scanInterval = null;
-          currentScanTaskId = null;
+          console.log('扫描完成，最终进度:', progress.value); // 调试日志
+          if (scanInterval !== null) {
+            clearInterval(scanInterval);
+            scanInterval = null;
+          }
           
-          // 重新获取模型列表
-          await loadModels();
-          
-          // 显示完成提示
-          showCompletionNotification();
+          // 短暂延迟以确保用户能看到100%的进度
+          setTimeout(async () => {
+            loading.value = false;
+            await loadModels();
+            // 显示扫描完成通知
+            toast.success('模型扫描完成');
+          }, 500);
         }
-      } catch (e) {
-        console.error('获取扫描状态失败', e);
-        clearInterval(scanInterval as number);
-        scanInterval = null;
-        currentScanTaskId = null;
-        error.value = '获取扫描状态失败';
+      } catch (err) {
+        console.error('获取扫描状态失败:', err);
+        if (scanInterval !== null) {
+          clearInterval(scanInterval);
+          scanInterval = null;
+        }
         loading.value = false;
+        error.value = '获取扫描状态失败';
+        // 显示错误通知
+        toast.error('扫描状态获取失败');
       }
-    }, 1000);
-  } catch (e) {
-    console.error('扫描模型失败', e);
-    error.value = '扫描模型失败';
+    }, 500); // 每500ms检查一次状态
+  } catch (err) {
+    console.error('扫描模型失败:', err);
     loading.value = false;
+    error.value = '扫描模型失败';
+    // 显示错误通知
+    toast.error('扫描模型失败');
   }
-}
+};
 
 async function loadModels() {
   try {
@@ -331,14 +342,9 @@ onMounted(async () => {
 
 // 组件卸载时清理
 onUnmounted(() => {
-  if (scanInterval) {
+  if (scanInterval !== null) {
     clearInterval(scanInterval);
     scanInterval = null;
   }
 });
-
-// 显示扫描完成通知
-function showCompletionNotification() {
-  toast.success('所有模型已扫描完成');
-}
 </script>
