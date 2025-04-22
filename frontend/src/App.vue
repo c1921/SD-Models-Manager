@@ -51,9 +51,6 @@
         :model-count="models.length"
       />
     </div>
-
-    <!-- 提示消息容器 -->
-    <div id="notification-container" class="notification-container"></div>
   </div>
 </template>
 
@@ -66,6 +63,7 @@ import ModelList from './components/ModelList.vue';
 import ModelDetailModal from './components/ModelDetailModal.vue';
 import AppNavbar from './components/AppNavbar.vue';
 import SettingsModal from './components/SettingsModal.vue';
+import toast from './utils/toast';
 
 // 类型定义
 interface FilterOption {
@@ -341,30 +339,6 @@ onUnmounted(() => {
 
 // 显示扫描完成通知
 function showCompletionNotification() {
-  // 使用FlyonUI的toast API
-  const notificationContainer = document.getElementById('notification-container');
-  if (notificationContainer) {
-    // 创建通知元素
-    const notification = document.createElement('div');
-    notification.className = 'notification notification-success bg-success text-success-content';
-    notification.innerHTML = `
-      <div class="notification-icon">
-        <span class="icon-[tabler--check] size-5"></span>
-      </div>
-      <div class="notification-content">
-        <div class="notification-title">扫描完成</div>
-        <div class="notification-message">所有模型已扫描完成</div>
-      </div>
-    `;
-    notificationContainer.appendChild(notification);
-    
-    // 3秒后移除通知
-    setTimeout(() => {
-      notification.classList.add('notification-hide');
-      setTimeout(() => {
-        notificationContainer.removeChild(notification);
-      }, 300);
-    }, 3000);
-  }
+  toast.success('所有模型已扫描完成');
 }
 </script>

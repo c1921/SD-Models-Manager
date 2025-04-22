@@ -103,6 +103,7 @@
 
 <script setup lang="ts">
 import type { Model } from '../api/models';
+import toast from '../utils/toast';
 
 defineProps<{
   models: Model[];
@@ -130,41 +131,18 @@ function onModelClick(model: Model) {
 function copyFileName(filename: string) {
   navigator.clipboard.writeText(filename)
     .then(() => {
-      showToast('文件名已复制到剪贴板');
+      toast.success('文件名已复制到剪贴板');
     })
     .catch(err => {
       console.error('复制失败:', err);
-      showToast('复制失败，请手动复制');
+      toast.error('复制失败，请手动复制');
     });
 }
 
 function openModelUrl(url: string) {
   if (url) {
     window.open(url, '_blank');
-  }
-}
-
-function showToast(message: string) {
-  const notificationContainer = document.getElementById('notification-container');
-  if (notificationContainer) {
-    const notification = document.createElement('div');
-    notification.className = 'notification notification-info bg-info text-info-content';
-    notification.innerHTML = `
-      <div class="notification-icon">
-        <span class="icon-[tabler--info-circle] size-5"></span>
-      </div>
-      <div class="notification-content">
-        <div class="notification-message">${message}</div>
-      </div>
-    `;
-    notificationContainer.appendChild(notification);
-    
-    setTimeout(() => {
-      notification.classList.add('notification-hide');
-      setTimeout(() => {
-        notificationContainer.removeChild(notification);
-      }, 300);
-    }, 2000);
+    toast.info('正在打开下载链接');
   }
 }
 
