@@ -26,22 +26,25 @@
           class="rounded-lg shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col bg-base-100 border border-base-200"
         >
           <div 
-            class="relative pt-[125%] cursor-pointer"
+            class="relative pt-[125%] cursor-pointer overflow-hidden rounded-t-lg"
             @click="onModelClick(model)"
           >
             <img 
               v-if="model.preview && (nsfw || !model.nsfw)" 
               :src="model.preview" 
-              class="absolute inset-0 w-full h-full object-cover rounded-t-lg" 
+              :class="[
+                'absolute inset-0 w-full h-full object-cover transition-all duration-300',
+                { 'blur-2xl': model.nsfw && blurNsfw }
+              ]" 
               :alt="model.name">
             <div 
               v-else 
-              class="absolute inset-0 flex items-center justify-center rounded-t-lg bg-base-200">
+              class="absolute inset-0 flex items-center justify-center bg-base-200">
               <span class="icon-[tabler--photo] size-10 text-base-content opacity-50"></span>
             </div>
             <div 
               v-if="model.nsfw" 
-              class="badge badge-error absolute top-2 right-2"
+              class="badge badge-error absolute top-2 right-2 z-10"
             >NSFW</div>
           </div>
           <div 
@@ -109,6 +112,7 @@ defineProps<{
   progressMessage: string;
   error: string;
   nsfw: boolean;
+  blurNsfw: boolean;
 }>();
 
 const emit = defineEmits<{

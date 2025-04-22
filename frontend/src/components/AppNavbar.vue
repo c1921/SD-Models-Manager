@@ -20,6 +20,19 @@
 
         <button 
           type="button"
+          :class="blurNsfw ? 'btn btn-outline btn-neutral' : 'btn btn-outline btn-error'" 
+          title="NSFW图片模糊控制"
+          @click="toggleBlurNsfw"
+        >
+          <span class="icon-[tabler--blur] size-5 me-1.5" v-if="blurNsfw"></span>
+          <span class="icon-[tabler--blur-off] size-5 me-1.5" v-else></span>
+          <span>模糊{{ blurNsfw ? '开' : '关' }}</span>
+        </button>
+
+        <div class="w-3"></div>
+
+        <button 
+          type="button"
           class="btn btn-icon btn-outline btn-neutral"
           title="设置"
           @click="onOpenSettings"
@@ -54,10 +67,12 @@
 defineProps<{
   nsfw: boolean;
   darkMode: boolean;
+  blurNsfw: boolean;
 }>();
 
 const emit = defineEmits<{
   'toggle-nsfw': [];
+  'toggle-blur-nsfw': [];
   'toggle-dark-mode': [];
   'open-settings': [];
   'open-filter-sidebar': [];
@@ -65,6 +80,10 @@ const emit = defineEmits<{
 
 function toggleNsfw() {
   emit('toggle-nsfw');
+}
+
+function toggleBlurNsfw() {
+  emit('toggle-blur-nsfw');
 }
 
 function toggleDarkMode() {

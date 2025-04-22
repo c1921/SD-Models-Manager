@@ -33,11 +33,15 @@
         <div class="modal-body p-6">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="md:col-span-2">
-              <img 
-                v-if="model?.preview" 
-                :src="model.preview" 
-                class="w-full rounded-lg" 
-                :alt="model?.name">
+              <div v-if="model?.preview" class="overflow-hidden rounded-lg">
+                <img 
+                  :src="model.preview" 
+                  :class="[
+                    'w-full transition-all duration-300', 
+                    { 'blur-2xl': model.nsfw && blurNsfw }
+                  ]" 
+                  :alt="model?.name">
+              </div>
               <div 
                 v-else 
                 class="flex flex-col items-center justify-center p-12 rounded-lg bg-base-200">
@@ -78,6 +82,7 @@ import type { Model } from '../api/models';
 
 defineProps<{
   model: Model | null;
+  blurNsfw: boolean;
 }>();
 
 const emit = defineEmits<{

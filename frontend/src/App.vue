@@ -4,7 +4,9 @@
     <AppNavbar
       :nsfw="nsfw"
       :dark-mode="darkMode"
+      :blur-nsfw="blurNsfw"
       @toggle-nsfw="toggleNsfw"
+      @toggle-blur-nsfw="toggleBlurNsfw"
       @toggle-dark-mode="toggleDarkMode"
       @open-settings="openSettings"
       @open-filter-sidebar="openFilterSidebar"
@@ -23,6 +25,7 @@
     <ModelDetailModal
       ref="modelDetailModalRef"
       :model="selectedModel"
+      :blur-nsfw="blurNsfw"
       @close="closeModelDetail"
     />
 
@@ -38,6 +41,7 @@
             :progress-message="progressMessage"
             :error="error"
             :nsfw="nsfw"
+            :blur-nsfw="blurNsfw"
             @model-click="openModelDetails"
             @open-settings="openSettings"
           />
@@ -84,6 +88,7 @@ const modelPath = ref('');
 const models = ref<Model[]>([]);
 const nsfw = ref(false);
 const darkMode = ref(false);
+const blurNsfw = ref(true);
 const loading = ref(false);
 const progress = ref(0);
 const progressMessage = ref('');
@@ -174,6 +179,12 @@ function toggleNsfw() {
   nsfw.value = !nsfw.value;
   // 保存设置到 localStorage
   localStorage.setItem('nsfw', String(nsfw.value));
+}
+
+function toggleBlurNsfw() {
+  blurNsfw.value = !blurNsfw.value;
+  // 保存设置到 localStorage
+  localStorage.setItem('blurNsfw', String(blurNsfw.value));
 }
 
 function toggleDarkMode() {
@@ -309,6 +320,12 @@ onMounted(async () => {
   const savedNsfw = localStorage.getItem('nsfw');
   if (savedNsfw !== null) {
     nsfw.value = savedNsfw === 'true';
+  }
+  
+  // 从 localStorage 加载模糊设置
+  const savedBlurNsfw = localStorage.getItem('blurNsfw');
+  if (savedBlurNsfw !== null) {
+    blurNsfw.value = savedBlurNsfw === 'true';
   }
   
   // 加载暗色模式设置
