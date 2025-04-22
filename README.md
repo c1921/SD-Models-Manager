@@ -39,24 +39,80 @@ models/
 ### 环境要求
 
 - Python 3.13+
+- Node.js 20+
+- npm 10+
 
-### 安装依赖
+### 快速启动（推荐）
 
-```bash
-pip install -r requirements.txt
-```
-
-### 运行开发服务器
+使用开发辅助脚本同时启动前端和后端：
 
 ```bash
-python main.py
+python run.py
 ```
 
-### 构建可执行文件
+这将自动：
+
+- 启动后端API服务
+- 启动前端Vite开发服务器
+- 打开浏览器访问前端页面
+
+可用选项：
+
+- `--port <端口号>` - 指定后端API端口
+- `--no-browser` - 不自动打开浏览器
+
+```bash
+# 示例：指定端口并不自动打开浏览器
+python run.py --port 8000 --no-browser
+```
+
+### 分别启动（手动模式）
+
+#### 后端开发
+
+1. 安装Python依赖
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. 运行开发服务器
+
+   ```bash
+   python main.py --dev
+   ```
+
+#### 前端开发
+
+1. 进入前端目录
+
+   ```bash
+   cd frontend
+   ```
+
+2. 安装依赖
+
+   ```bash
+   npm install
+   ```
+
+3. 启动开发服务器
+
+   ```bash
+   npm run dev
+   ```
+
+前端开发服务器默认运行在 <http://localhost:5173>
+
+### 构建应用
+
+一键构建整个应用（包含前端和后端）：
 
 ```bash
 python build.py
 ```
+
+构建结果将在 `dist` 目录下生成。
 
 ## 许可证
 
