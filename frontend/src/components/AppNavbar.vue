@@ -1,7 +1,7 @@
 <template>
   <!-- 导航栏 -->
   <nav class="sticky top-0 z-10 shadow bg-base-100">
-    <div class="container mx-auto px-4 flex items-center justify-between h-16">
+    <div class="container mx-auto px-1 flex items-center justify-between h-16">
       <a href="#" class="flex items-center">
         <img src="/favicon.svg" alt="Stable Diffusion 模型管理器" class="h-7">
       </a>

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="px-1">
     <!-- 加载错误提示 -->
     <div v-if="error" class="alert alert-error" role="alert">
       <span class="icon-[tabler--alert-circle] me-2"></span>
@@ -24,7 +24,7 @@
     </div>
 
     <!-- 模型列表 -->
-    <div v-if="!loading && models.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-8">
+    <div v-if="!loading && models.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 pb-8">
       <div v-for="model in filteredModels" :key="model.id">
         <div 
           class="rounded-lg shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col bg-base-100 border border-base-200"

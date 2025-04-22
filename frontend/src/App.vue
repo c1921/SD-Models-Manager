@@ -29,7 +29,7 @@
     <div class="flex-1 container-fluid flex flex-col lg:flex-row overflow-hidden">
       <!-- 主内容区 - 模型列表组件 -->
       <div class="flex-1 overflow-hidden">
-        <div class="h-full overflow-y-auto px-4 py-6 bg-base-200">
+        <div class="h-full overflow-y-auto px-10 py-6 bg-base-200">
           <ModelList
             :models="models"
             :filtered-models="filteredModels"
