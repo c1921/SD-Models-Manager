@@ -28,9 +28,11 @@
       <div v-for="model in filteredModels" :key="model.id">
         <div 
           class="rounded-lg shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col bg-base-100 border border-base-200"
-          @click="onModelClick(model)"
         >
-          <div class="relative pt-[125%]">
+          <div 
+            class="relative pt-[125%] cursor-pointer"
+            @click="onModelClick(model)"
+          >
             <img 
               v-if="model.preview && (nsfw || !model.nsfw)" 
               :src="model.preview" 
@@ -46,16 +48,33 @@
               class="badge badge-error absolute top-2 right-2"
             >NSFW</div>
           </div>
-          <div class="p-4 flex-1">
+          <div 
+            class="p-4 flex-1 cursor-pointer"
+            @click="onModelClick(model)"
+          >
             <h3 class="text-base font-medium truncate text-base-content">{{ model.name }}</h3>
             <div class="flex flex-col gap-1 mt-2">
               <div class="text-sm text-base-content/80">类型: {{ model.type }}</div>
               <div class="text-sm text-base-content/80">基础模型: {{ model.base_model }}</div>
+              <div v-if="model.size" class="text-sm text-base-content/80">大小: {{ formatFileSize(model.size) }}</div>
             </div>
           </div>
-          <div class="flex justify-between items-center px-4 py-2 border-t border-base-200 text-xs text-base-content/70">
-            <span class="truncate max-w-[70%]">{{ model.filename }}</span>
-            <span v-if="model.size">{{ formatFileSize(model.size) }}</span>
+          <div class="join w-full">
+            <button 
+              class="btn btn-sm btn-soft join-item flex-1"
+              @click.stop="copyFileName(model.filename)"
+              title="复制文件名"
+            >
+              <span class="icon-[tabler--copy] size-4 me-1"></span>
+            </button>
+            <button 
+              v-if="model.url"
+              class="btn btn-sm btn-soft join-item flex-1"
+              @click.stop="openModelUrl(model.url)"
+              title="访问下载链接"
+            >
+              <span class="icon-[tabler--external-link] size-4 me-1"></span>
+            </button>
           </div>
         </div>
       </div>
@@ -106,6 +125,47 @@ function onOpenSettings() {
 
 function onModelClick(model: Model) {
   emit('model-click', model);
+}
+
+function copyFileName(filename: string) {
+  navigator.clipboard.writeText(filename)
+    .then(() => {
+      showToast('文件名已复制到剪贴板');
+    })
+    .catch(err => {
+      console.error('复制失败:', err);
+      showToast('复制失败，请手动复制');
+    });
+}
+
+function openModelUrl(url: string) {
+  if (url) {
+    window.open(url, '_blank');
+  }
+}
+
+function showToast(message: string) {
+  const notificationContainer = document.getElementById('notification-container');
+  if (notificationContainer) {
+    const notification = document.createElement('div');
+    notification.className = 'notification notification-info bg-info text-info-content';
+    notification.innerHTML = `
+      <div class="notification-icon">
+        <span class="icon-[tabler--info-circle] size-5"></span>
+      </div>
+      <div class="notification-content">
+        <div class="notification-message">${message}</div>
+      </div>
+    `;
+    notificationContainer.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('notification-hide');
+      setTimeout(() => {
+        notificationContainer.removeChild(notification);
+      }, 300);
+    }, 2000);
+  }
 }
 
 function formatFileSize(size: number): string {

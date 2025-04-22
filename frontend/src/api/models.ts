@@ -22,6 +22,7 @@ export interface Model {
   hash?: string;
   tags?: string[];
   base_model?: string;
+  url?: string;
 }
 
 // 后端返回的模型数据格式
@@ -48,7 +49,8 @@ function convertModel(backendModel: BackendModel): Model {
     type: backendModel.type,
     preview: backendModel.preview_url,
     nsfw: backendModel.nsfw || false,
-    base_model: backendModel.baseModel
+    base_model: backendModel.baseModel,
+    url: backendModel.url
   };
 }
 

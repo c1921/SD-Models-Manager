@@ -11,6 +11,7 @@ export interface Model {
   hash?: string;
   tags?: string[];
   base_model?: string;
+  url?: string;
 }
 
 // 筛选器选项接口
