@@ -67,16 +67,6 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer border-t border-base-200">
-          <button 
-            type="button" 
-            class="btn btn-outline" 
-            data-overlay="#model-detail-modal"
-            @click="onClose"
-          >
-            关闭
-          </button>
-        </div>
       </div>
     </div>
   </div>
