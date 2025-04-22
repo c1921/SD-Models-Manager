@@ -50,23 +50,45 @@
               </div>
             </div>
             <div>
-              <div v-if="model" class="flex flex-col space-y-3 text-base-content">
-                <p><span class="font-medium">文件名:</span> {{ model.filename }}</p>
-                <p><span class="font-medium">模型类型:</span> {{ model.type }}</p>
-                <p v-if="model.size"><span class="font-medium">文件大小:</span> {{ formatFileSize(model.size) }}</p>
-                <p v-if="model.created_at"><span class="font-medium">创建时间:</span> {{ formatDate(model.created_at) }}</p>
-                <p v-if="model.hash"><span class="font-medium">哈希值:</span> {{ model.hash }}</p>
-                <p v-if="model.base_model"><span class="font-medium">基础模型:</span> {{ model.base_model }}</p>
-                <div v-if="model.tags && model.tags.length > 0">
-                  <span class="font-medium">标签:</span>
-                  <div class="mt-2 flex flex-wrap gap-1">
-                    <span 
-                      v-for="tag in model.tags" 
-                      :key="tag"
-                      class="badge badge-secondary"
-                    >{{ tag }}</span>
+              <div v-if="model" class="mt-3">
+                <dl class="divide-y divide-base-content/25">
+                  <div class="py-3 sm:grid sm:grid-cols-3 sm:gap-4 text-base">
+                    <dt class="font-medium text-base-content">文件名</dt>
+                    <dd class="mt-1 text-base-content/80 sm:col-span-2 sm:mt-0 break-all">{{ model.filename }}</dd>
                   </div>
-                </div>
+                  <div class="py-3 sm:grid sm:grid-cols-3 sm:gap-4 text-base">
+                    <dt class="font-medium text-base-content">模型类型</dt>
+                    <dd class="mt-1 text-base-content/80 sm:col-span-2 sm:mt-0">{{ model.type }}</dd>
+                  </div>
+                  <div v-if="model.size" class="py-3 sm:grid sm:grid-cols-3 sm:gap-4 text-base">
+                    <dt class="font-medium text-base-content">文件大小</dt>
+                    <dd class="mt-1 text-base-content/80 sm:col-span-2 sm:mt-0">{{ formatFileSize(model.size) }}</dd>
+                  </div>
+                  <div v-if="model.created_at" class="py-3 sm:grid sm:grid-cols-3 sm:gap-4 text-base">
+                    <dt class="font-medium text-base-content">创建时间</dt>
+                    <dd class="mt-1 text-base-content/80 sm:col-span-2 sm:mt-0">{{ formatDate(model.created_at) }}</dd>
+                  </div>
+                  <div v-if="model.hash" class="py-3 sm:grid sm:grid-cols-3 sm:gap-4 text-base">
+                    <dt class="font-medium text-base-content">哈希值</dt>
+                    <dd class="mt-1 text-base-content/80 sm:col-span-2 sm:mt-0 break-all">{{ model.hash }}</dd>
+                  </div>
+                  <div v-if="model.base_model" class="py-3 sm:grid sm:grid-cols-3 sm:gap-4 text-base">
+                    <dt class="font-medium text-base-content">基础模型</dt>
+                    <dd class="mt-1 text-base-content/80 sm:col-span-2 sm:mt-0">{{ model.base_model }}</dd>
+                  </div>
+                  <div v-if="model.tags && model.tags.length > 0" class="py-3 sm:grid sm:grid-cols-3 sm:gap-4 text-base">
+                    <dt class="font-medium text-base-content">标签</dt>
+                    <dd class="mt-1 text-base-content/80 sm:col-span-2 sm:mt-0">
+                      <div class="flex flex-wrap gap-1">
+                        <span 
+                          v-for="tag in model.tags" 
+                          :key="tag"
+                          class="badge badge-secondary"
+                        >{{ tag }}</span>
+                      </div>
+                    </dd>
+                  </div>
+                </dl>
               </div>
             </div>
           </div>
