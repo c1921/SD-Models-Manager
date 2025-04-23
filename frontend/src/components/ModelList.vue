@@ -132,13 +132,13 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  'open-settings': [];
   'model-click': [model: Model];
   'model-updated': [model: Model];
 }>();
 
 function onOpenSettings() {
-  emit('open-settings');
+  // 触发全局事件而不是组件事件
+  window.dispatchEvent(new CustomEvent('open-settings-modal'));
 }
 
 function onModelClick(model: Model) {

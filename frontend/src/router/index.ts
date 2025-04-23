@@ -14,16 +14,7 @@ const routes = [
     meta: {
       title: '模型管理'
     }
-  },
-  // 可以在这里添加新的路由
-  // {
-  //   path: '/generate',
-  //   name: 'ImageGeneration',
-  //   component: () => import('../pages/ImageGeneration.vue'),
-  //   meta: {
-  //     title: '图像生成'
-  //   }
-  // },
+  }
 ]
 
 // 创建路由实例

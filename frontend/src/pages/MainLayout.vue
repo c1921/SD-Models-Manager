@@ -28,6 +28,16 @@
         </div>
         
         <div class="flex items-center gap-2">
+          <!-- 设置按钮 -->
+          <button 
+            type="button"
+            class="btn btn-icon btn-outline"
+            title="设置"
+            @click="goToSettings"
+          >
+            <span class="icon-[tabler--settings] size-5"></span>
+          </button>
+          
           <!-- 主题切换 -->
           <button 
             type="button"
@@ -83,22 +93,39 @@
     <main class="flex-1 overflow-hidden">
       <router-view />
     </main>
+    
+    <!-- 设置模态窗组件 -->
+    <SettingsModal
+      ref="settingsModalRef"
+      :app-version="appVersion"
+      :model-path="modelPath"
+      @update:model-path="modelPath = $event"
+      @scan-models="scanModels"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import SettingsModal from '../components/SettingsModal.vue';
+import { ModelsAPI } from '../api/models';
 
-// 获取当前路由
+// 使用Vue Router的API获取当前路由信息
+const router = useRouter();
 const route = useRoute();
 
-// 当前是否在模型管理页面
+// 当前是否在对应页面
 const isModelPage = computed(() => route.path.startsWith('/models'));
 
 // 移动端菜单状态
 const mobileMenuOpen = ref(false);
 const darkMode = ref(false);
+
+// 设置相关状态
+const appVersion = ref('');
+const modelPath = ref('');
+const settingsModalRef = ref<InstanceType<typeof SettingsModal> | null>(null);
 
 // 切换移动端菜单
 function toggleMobileMenu() {
@@ -113,8 +140,30 @@ function toggleDarkMode() {
   localStorage.setItem('theme', theme);
 }
 
+// 打开设置模态框
+function goToSettings() {
+  if (settingsModalRef.value) {
+    settingsModalRef.value.open();
+  }
+}
+
+// 扫描模型
+async function scanModels() {
+  // 如果不在模型页面，先导航到模型页面
+  if (!isModelPage.value) {
+    router.push({ path: '/models' });
+    // 导航后等待组件挂载完成再触发扫描
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('scan-models'));
+    }, 300);
+  } else {
+    // 如果已经在模型页面，直接发射扫描事件
+    window.dispatchEvent(new CustomEvent('scan-models'));
+  }
+}
+
 // 生命周期钩子
-onMounted(() => {
+onMounted(async () => {
   // 从 localStorage 加载主题设置
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme) {
@@ -125,6 +174,22 @@ onMounted(() => {
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     darkMode.value = prefersDark;
     document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+  }
+  
+  // 获取应用版本
+  try {
+    const versionInfo = await ModelsAPI.getVersion();
+    appVersion.value = versionInfo.version;
+  } catch (e) {
+    console.error('获取版本信息失败', e);
+    appVersion.value = '0.5.1'; // 默认版本号
+  }
+  
+  // 加载模型目录
+  try {
+    modelPath.value = await ModelsAPI.getModelPath();
+  } catch (e) {
+    console.error('获取模型目录失败', e);
   }
 });
 </script>

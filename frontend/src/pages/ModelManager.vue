@@ -1,14 +1,5 @@
 <template>
   <div class="h-full flex flex-col overflow-hidden">
-    <!-- 设置模态窗组件 -->
-    <SettingsModal
-      ref="settingsModalRef"
-      :app-version="appVersion"
-      :model-path="modelPath"
-      @update:model-path="modelPath = $event"
-      @scan-models="scanModelsAndClose"
-    />
-
     <!-- 模型详情模态框组件 -->
     <ModelDetailModal
       ref="modelDetailModalRef"
@@ -52,15 +43,6 @@
             <span class="icon-[tabler--blur-off] size-5" v-else></span>
             <span class="hidden md:inline ml-2">模糊{{ blurNsfw ? '开' : '关' }}</span>
           </button>
-
-          <button 
-            type="button"
-            class="btn btn-sm md:btn-md btn-outline"
-            title="设置"
-            @click="openSettings"
-          >
-            <span class="icon-[tabler--settings] size-5"></span>
-          </button>
         </div>
       </div>
     </div>
@@ -79,7 +61,6 @@
             :nsfw="nsfw"
             :blur-nsfw="blurNsfw"
             @model-click="openModelDetails"
-            @open-settings="openSettings"
             @model-updated="handleModelUpdated"
           />
         </div>
@@ -102,7 +83,6 @@ import type { Model } from '../api/models';
 import FilterSidebar from '../components/FilterSidebar.vue';
 import ModelList from '../components/ModelList.vue';
 import ModelDetailModal from '../components/ModelDetailModal.vue';
-import SettingsModal from '../components/SettingsModal.vue';
 import toast from '../utils/toast';
 
 // 类型定义
@@ -119,11 +99,8 @@ interface Filter {
 }
 
 // 状态管理
-const appVersion = ref('');
-const modelPath = ref('');
 const models = ref<Model[]>([]);
 const nsfw = ref(false);
-const darkMode = ref(false);
 const blurNsfw = ref(true);
 const loading = ref(false);
 const progress = ref(0);
@@ -135,7 +112,6 @@ let scanInterval: ReturnType<typeof setInterval> | null = null;
 // UI状态控制
 const filterSidebarRef = ref<InstanceType<typeof FilterSidebar> | null>(null);
 const modelDetailModalRef = ref<InstanceType<typeof ModelDetailModal> | null>(null);
-const settingsModalRef = ref<InstanceType<typeof SettingsModal> | null>(null);
 
 // 筛选器状态
 const filters = reactive<Record<string, Filter>>({
@@ -223,28 +199,7 @@ function toggleBlurNsfw() {
   localStorage.setItem('blurNsfw', String(blurNsfw.value));
 }
 
-function toggleDarkMode() {
-  darkMode.value = !darkMode.value;
-  const theme = darkMode.value ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('theme', theme);
-}
 
-function openSettings() {
-  if (settingsModalRef.value) {
-    settingsModalRef.value.open();
-  }
-}
-
-function openFilterSidebar() {
-  if (filterSidebarRef.value) {
-    filterSidebarRef.value.openFilterSidebar();
-  }
-}
-
-function scanModelsAndClose() {
-  scanModels();
-}
 
 const scanModels = async () => {
   try {
@@ -325,14 +280,6 @@ async function loadModels() {
   }
 }
 
-async function loadModelPath() {
-  try {
-    modelPath.value = await ModelsAPI.getModelPath();
-  } catch (e) {
-    console.error('获取模型目录失败', e);
-  }
-}
-
 function openModelDetails(model: Model) {
   selectedModel.value = model;
   // 打开模型详情模态框
@@ -361,6 +308,9 @@ watch(models, () => {
 
 // 生命周期钩子
 onMounted(async () => {
+  // 添加事件监听器以响应扫描模型事件
+  window.addEventListener('scan-models', scanModels);
+  
   // 从 localStorage 加载设置
   const savedNsfw = localStorage.getItem('nsfw');
   if (savedNsfw !== null) {
@@ -373,18 +323,6 @@ onMounted(async () => {
     blurNsfw.value = savedBlurNsfw === 'true';
   }
   
-  // 获取应用版本
-  try {
-    const versionInfo = await ModelsAPI.getVersion();
-    appVersion.value = versionInfo.version;
-  } catch (e) {
-    console.error('获取版本信息失败', e);
-    appVersion.value = '0.2.0'; // 默认版本号
-  }
-  
-  // 加载模型目录
-  await loadModelPath();
-  
   // 加载模型列表
   loading.value = true;
   await loadModels();
@@ -392,6 +330,9 @@ onMounted(async () => {
 
 // 组件卸载时清理
 onUnmounted(() => {
+  // 移除事件监听器
+  window.removeEventListener('scan-models', scanModels);
+  
   if (scanInterval !== null) {
     clearInterval(scanInterval);
     scanInterval = null;
