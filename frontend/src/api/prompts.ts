@@ -98,7 +98,7 @@ export const PromptsAPI = {
   
   // 获取所有分类
   getCategories: async (): Promise<string[]> => {
-    const response = await apiClient.get('/prompts/categories');
+    const response = await apiClient.get('/categories');
     return response.data.categories;
   },
   
