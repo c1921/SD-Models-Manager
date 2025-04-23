@@ -106,14 +106,17 @@
         <div id="badges-list" v-else class="flex flex-wrap gap-2">
           <div 
             v-for="(prompt, index) in prompts" 
-            :key="'prompt-' + index + '-' + prompt"
-            class="badge badge-lg flex items-center gap-1 cursor-move"
+            :key="'prompt-' + index + '-' + prompt.text"
+            class="badge badge-lg flex items-center gap-2 px-3 py-2 cursor-move min-w-24 h-auto"
             :class="badgeColor"
             :data-id="index"
           >
-            {{ prompt }}
+            <div class="flex-grow flex flex-col items-center">
+              <div class="text-sm w-full text-center">{{ prompt.chinese }}</div>
+              <div class="text-xs opacity-80 w-full text-center">{{ prompt.english }}</div>
+            </div>
             <button 
-              class="btn btn-ghost btn-xs btn-circle"
+              class="btn btn-ghost btn-xs btn-circle flex-shrink-0"
               @click.stop="removePrompt(index)"
             >
               <i class="icon-[tabler--x] size-3"></i>
@@ -138,6 +141,13 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted, nextTick } from 'vue';
 import Sortable from 'sortablejs';
+
+// 提示词数据结构
+interface PromptData {
+  text: string;     // 原始文本
+  chinese: string;  // 中文显示
+  english: string;  // 英文显示
+}
 
 // 示例提示词数据
 interface ExampleCategory {
@@ -175,16 +185,81 @@ const examplePromptsData: Record<string, ExampleCategory> = {
   }
 };
 
+// 简单的中英文映射字典
+const translationMap: Record<string, string> = {
+  '写实风格': 'realistic style',
+  '动漫风格': 'anime style',
+  '水彩画': 'watercolor',
+  '油画': 'oil painting',
+  '素描': 'sketch',
+  '赛博朋克': 'cyberpunk',
+  '未来主义': 'futurism',
+  '极简主义': 'minimalism',
+  '高清': 'high resolution',
+  '高质量': 'high quality',
+  '细节丰富': 'detailed',
+  '精细': 'fine detail',
+  '夜景': 'night scene',
+  '黎明': 'dawn',
+  '黄昏': 'dusk',
+  '雨天': 'rainy',
+  '雪景': 'snow scene',
+  '海边': 'seaside',
+  '森林': 'forest',
+  '城市': 'city',
+  '星空': 'starry sky',
+  '广角镜头': 'wide-angle lens',
+  '长焦镜头': 'telephoto lens',
+  '鱼眼镜头': 'fisheye lens',
+  '微距': 'macro',
+  '景深': 'depth of field',
+  '散景': 'bokeh',
+  '低角度': 'low angle',
+  '航拍': 'aerial photography',
+  '逆光': 'backlight',
+  '侧光': 'sidelight',
+  '柔光': 'soft light',
+  '硬光': 'hard light',
+  '聚光': 'spotlight',
+  '霓虹灯': 'neon lights',
+  '金色光芒': 'golden rays',
+  '蓝色调': 'blue tone'
+};
+
 export default defineComponent({
   name: 'PromptBadges',
   
   setup() {
     const promptInput = ref('');
-    const prompts = ref<string[]>([]);
+    const prompts = ref<PromptData[]>([]);
     const separator = ref(',');
     const badgeColor = ref('badge-primary');
     const exampleCategories = ref<ExampleCategory[]>(Object.values(examplePromptsData));
     let sortableInstance: Sortable | null = null;
+    
+    // 创建提示词对象
+    const createPromptData = (text: string): PromptData => {
+      // 检查是否是英文
+      const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(text);
+      
+      // 如果是英文文本
+      if (isEnglish) {
+        // 这里可以添加英译中的逻辑，目前简单处理
+        return {
+          text: text,
+          english: text,
+          chinese: '翻译中...' // 实际应用中可以接入翻译API
+        };
+      } 
+      // 如果是中文文本
+      else {
+        return {
+          text: text,
+          chinese: text,
+          english: translationMap[text] || text // 尝试从字典获取翻译，没有则使用原文
+        };
+      }
+    };
     
     // 添加提示词
     const addPrompt = () => {
@@ -194,7 +269,8 @@ export default defineComponent({
       const newPrompts = promptInput.value
         .split(separator.value)
         .map(p => p.trim())
-        .filter(p => p !== '');
+        .filter(p => p !== '')
+        .map(createPromptData);
       
       // 添加到提示词列表
       prompts.value = [...prompts.value, ...newPrompts];
@@ -227,15 +303,18 @@ export default defineComponent({
     const loadExamplePrompts = (categoryId: string) => {
       const category = examplePromptsData[categoryId];
       if (category) {
+        // 将字符串转换为PromptData对象
+        const promptDataList = category.prompts.map(createPromptData);
+        
         // 如果已有提示词，询问是否替换
         if (prompts.value.length > 0) {
           if (confirm('是否要替换当前的提示词列表？点击确定替换，点击取消则添加到现有列表')) {
-            prompts.value = [...category.prompts];
+            prompts.value = [...promptDataList];
           } else {
-            prompts.value = [...prompts.value, ...category.prompts];
+            prompts.value = [...prompts.value, ...promptDataList];
           }
         } else {
-          prompts.value = [...category.prompts];
+          prompts.value = [...promptDataList];
         }
         
         // 重新初始化拖拽排序
@@ -281,7 +360,8 @@ export default defineComponent({
     const copyToClipboard = () => {
       if (prompts.value.length === 0) return;
       
-      const text = prompts.value.join(', ');
+      // 获取英文提示词并拼接
+      const text = prompts.value.map(p => p.english).join(', ');
       navigator.clipboard.writeText(text)
         .then(() => {
           alert('已复制到剪贴板');
@@ -325,4 +405,16 @@ export default defineComponent({
     };
   }
 });
-</script> 
+</script>
+
+<style scoped>
+.badge {
+  position: relative;
+  justify-content: space-between;
+  text-align: center;
+  word-break: break-word;
+  overflow: visible;
+  height: auto !important;
+  white-space: normal;
+}
+</style> 
