@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ModelManager from '../pages/ModelManager.vue'
+import PromptManager from '../pages/PromptManager.vue'
 
 // 定义路由配置
 const routes = [
@@ -13,6 +14,14 @@ const routes = [
     component: ModelManager,
     meta: {
       title: '模型管理'
+    }
+  },
+  {
+    path: '/prompts',
+    name: 'PromptManager',
+    component: PromptManager,
+    meta: {
+      title: '提示词管理'
     }
   }
 ]

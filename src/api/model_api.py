@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 from src.utils.file_utils import select_directory
 from src.version.version import VERSION_STR, COMPANY, COPYRIGHT
+from src.api.prompt_api import create_prompt_api
+from src.core.prompt_manager import PromptManager
 
 class PathUpdate(BaseModel):
     path: str
@@ -22,6 +24,9 @@ def create_api(manager, frontend_url=None):
         frontend_url: 可选的前端URL，如果提供，根路径将重定向到此URL
     """
     app = FastAPI(title="Stable Diffusion 模型管理器")
+
+    # 创建提示词管理器实例
+    prompt_manager = PromptManager()
 
     # 配置 CORS - 允许前端开发服务器的跨域请求
     app.add_middleware(
@@ -108,6 +113,10 @@ def create_api(manager, frontend_url=None):
                 status_code=404,
                 content={"detail": "Favicon not found"}
             )
+
+    # 集成提示词管理API
+    prompt_router = create_prompt_api(prompt_manager)
+    app.include_router(prompt_router, prefix="/api")
 
     @app.get("/api/models")
     async def get_models():

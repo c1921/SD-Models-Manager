@@ -22,6 +22,18 @@
                   模型管理
                 </router-link>
               </li>
+              <li>
+                <router-link 
+                  to="/prompts" 
+                  class="btn btn-sm" 
+                  :class="[
+                    isPromptPage ? 'btn-primary' : 'btn-ghost'
+                  ]"
+                >
+                  <span class="icon-[tabler--message-circle] inline-block me-1.5 size-5"></span>
+                  提示词管理
+                </router-link>
+              </li>
               <!-- 这里可以添加更多导航项 -->
             </ul>
           </nav>
@@ -84,6 +96,17 @@
             <span class="icon-[tabler--database] inline-block me-1.5 size-5"></span>
             模型管理
           </router-link>
+          <router-link 
+            to="/prompts" 
+            class="btn" 
+            :class="[
+              isPromptPage ? 'btn-primary' : 'btn-ghost'
+            ]"
+            @click="mobileMenuOpen = false"
+          >
+            <span class="icon-[tabler--message-circle] inline-block me-1.5 size-5"></span>
+            提示词管理
+          </router-link>
           <!-- 这里可以添加更多导航项 -->
         </div>
       </div>
@@ -117,6 +140,7 @@ const route = useRoute();
 
 // 当前是否在对应页面
 const isModelPage = computed(() => route.path.startsWith('/models'));
+const isPromptPage = computed(() => route.path.startsWith('/prompts'));
 
 // 移动端菜单状态
 const mobileMenuOpen = ref(false);
