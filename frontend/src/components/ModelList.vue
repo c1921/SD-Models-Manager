@@ -23,7 +23,7 @@
     <div v-if="!loading && models.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 pb-8">
       <div v-for="model in filteredModels" :key="model.id">
         <div 
-          class="rounded-lg shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col bg-base-100 border border-base-200"
+          class="rounded-lg shadow-sm hover:shadow-md transition-all duration-200 transform hover:-translate-y-1 cursor-pointer h-full flex flex-col bg-base-100 border border-base-200 group"
         >
           <div 
             class="relative pt-[125%] cursor-pointer overflow-hidden rounded-t-lg"
@@ -49,10 +49,13 @@
             >NSFW</div>
             
             <!-- NSFW标记按钮 - 只在非原始NSFW模型上显示 -->
+            <!-- 已标记的始终显示，未标记的仅在鼠标悬浮时显示 -->
             <button 
               v-if="!model.original_nsfw"
-              class="absolute top-2 left-2 z-10 btn btn-circle btn-xs" 
-              :class="[model.custom_nsfw ? 'btn-warning' : 'btn-outline btn-neutral']"
+              class="absolute top-2 left-2 z-10 btn btn-circle btn-xs transition-opacity duration-200" 
+              :class="[
+                model.custom_nsfw ? 'btn-warning opacity-100' : 'btn-neutral opacity-0 group-hover:opacity-100'
+              ]"
               title="标记/取消标记为NSFW内容"
               @click.stop="toggleNsfw(model)"
             >
