@@ -24,21 +24,8 @@
       </div>
     </div>
 
-    <!-- 示例提示词 -->
-    <div class="mb-4">
-      <label class="block text-sm font-medium mb-2">示例提示词</label>
-      <div class="flex flex-wrap gap-2">
-        <button 
-          v-for="(category, index) in exampleCategories" 
-          :key="index"
-          class="btn btn-sm btn-outline"
-          @click="loadExamplePrompts(category.id)"
-          :disabled="isTranslating"
-        >
-          {{ category.name }}
-        </button>
-      </div>
-    </div>
+    <!-- 提示词库 -->
+    <PromptLibrary @select-prompt="addPromptFromLibrary" />
 
     <!-- 已拆分的提示词badges -->
     <div class="mb-4">
@@ -89,9 +76,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, nextTick, computed, onBeforeUnmount } from 'vue';
+import { defineComponent, ref, onMounted, nextTick, computed, onBeforeUnmount, watch } from 'vue';
 import Sortable from 'sortablejs';
 import { PromptsAPI } from '../api/prompts'; // 导入API
+import type { PromptLibraryItem } from '../api/prompts'; // 从API文件导入类型
+import PromptLibrary from './PromptLibrary.vue'; // 导入提示词库组件
 
 // 提示词数据结构
 interface PromptData {
@@ -100,42 +89,6 @@ interface PromptData {
   english: string;  // 英文显示
   isTranslating?: boolean; // 是否正在翻译
 }
-
-// 示例提示词数据
-interface ExampleCategory {
-  id: string;
-  name: string;
-  prompts: string[];
-}
-
-// 各类示例提示词
-const examplePromptsData: Record<string, ExampleCategory> = {
-  style: {
-    id: 'style',
-    name: '风格类',
-    prompts: ['写实风格', '动漫风格', '水彩画', '油画', '素描', '赛博朋克', '未来主义', '极简主义']
-  },
-  quality: {
-    id: 'quality',
-    name: '质量类',
-    prompts: ['高清', '8K', '高质量', '细节丰富', '精细', 'masterpiece', 'best quality', 'ultra detailed']
-  },
-  scene: {
-    id: 'scene',
-    name: '场景类',
-    prompts: ['夜景', '黎明', '黄昏', '雨天', '雪景', '海边', '森林', '城市', '星空']
-  },
-  camera: {
-    id: 'camera',
-    name: '相机参数',
-    prompts: ['广角镜头', '长焦镜头', '鱼眼镜头', '微距', '景深', '散景', '低角度', '航拍']
-  },
-  lighting: {
-    id: 'lighting',
-    name: '光照类',
-    prompts: ['逆光', '侧光', '柔光', '硬光', '聚光', '霓虹灯', '金色光芒', '蓝色调']
-  }
-};
 
 // 简单的中英文映射字典
 const translationMap: Record<string, string> = {
@@ -181,10 +134,13 @@ const translationMap: Record<string, string> = {
 export default defineComponent({
   name: 'PromptBadges',
   
+  components: {
+    PromptLibrary
+  },
+  
   setup() {
     // 提示词列表
     const prompts = ref<PromptData[]>([]);
-    const exampleCategories = ref<ExampleCategory[]>(Object.values(examplePromptsData));
     let sortableInstance: Sortable | null = null;
     let isUpdatingFromTextarea = false; // 标记是否从文本框更新，避免循环
     const rawInputValue = ref(''); // 保存原始输入值，解决末尾逗号问题
@@ -449,62 +405,36 @@ export default defineComponent({
       }, 0);
     };
     
-    // 加载示例提示词
-    const loadExamplePrompts = (categoryId: string) => {
-      const category = examplePromptsData[categoryId];
-      if (category) {
-        // 将字符串转换为PromptData对象
-        const promptDataList = category.prompts.map(createPromptData);
-        
-        // 如果已有提示词，询问是否替换
-        if (prompts.value.length > 0) {
-          if (confirm('是否要替换当前的提示词列表？点击确定替换，点击取消则添加到现有列表')) {
-            // 替换现有列表
-            prompts.value = [...promptDataList];
-            // 更新输入框，但不触发计算属性的set方法
-            isUpdatingFromTextarea = true;
-            rawInputValue.value = promptDataList.map(p => p.text).join(', ');
-            setTimeout(() => {
-              isUpdatingFromTextarea = false;
-            }, 0);
-          } else {
-            // 添加到现有列表，避免重复
-            const currentTexts = prompts.value.map(p => p.text);
-            const newPrompts = promptDataList.filter(p => !currentTexts.includes(p.text));
-            
-            if (newPrompts.length > 0) {
-              prompts.value = [...prompts.value, ...newPrompts];
-              
-              // 更新输入框，但不触发计算属性的set方法
-              isUpdatingFromTextarea = true;
-              rawInputValue.value = prompts.value.map(p => p.text).join(', ');
-              setTimeout(() => {
-                isUpdatingFromTextarea = false;
-              }, 0);
-            }
-          }
-        } else {
-          prompts.value = [...promptDataList];
-          
-          // 更新输入框，但不触发计算属性的set方法
-          isUpdatingFromTextarea = true;
-          rawInputValue.value = promptDataList.map(p => p.text).join(', ');
-          setTimeout(() => {
-            isUpdatingFromTextarea = false;
-          }, 0);
-        }
-        
-        // 重新初始化拖拽排序
-        nextTick(() => {
-          initSortable();
-          
-          // 批量翻译需要翻译的提示词
-          const needTranslation = promptDataList.filter(p => p.isTranslating);
-          if (needTranslation.length > 0) {
-            batchTranslatePrompts(prompts.value);
-          }
-        });
+    // 从提示词库添加提示词
+    const addPromptFromLibrary = (libraryItem: PromptLibraryItem) => {
+      // 检查是否已存在
+      const exists = prompts.value.some(p => p.text === libraryItem.text);
+      if (exists) {
+        return; // 已存在则不添加
       }
+      
+      // 创建新提示词对象
+      const newPromptData: PromptData = {
+        text: libraryItem.text,
+        chinese: libraryItem.chinese,
+        english: libraryItem.english,
+        isTranslating: false // 直接使用库中的翻译，不需要翻译
+      };
+      
+      // 添加到提示词列表
+      prompts.value.push(newPromptData);
+      
+      // 更新输入框
+      isUpdatingFromTextarea = true;
+      rawInputValue.value = prompts.value.map(p => p.text).join(', ');
+      setTimeout(() => {
+        isUpdatingFromTextarea = false;
+      }, 0);
+      
+      // 重新初始化拖拽排序
+      nextTick(() => {
+        initSortable();
+      });
     };
     
     // 初始化Sortable.js
@@ -604,8 +534,9 @@ export default defineComponent({
       }, 10);
     };
     
-    // 组件挂载后初始化Sortable.js
+    // 组件挂载后初始化
     onMounted(() => {
+      // 初始化拖拽排序
       nextTick(() => {
         if (prompts.value.length > 0) {
           initSortable();
@@ -624,14 +555,13 @@ export default defineComponent({
     return {
       promptInput,
       prompts,
-      exampleCategories,
       removePrompt,
-      loadExamplePrompts,
       copyToClipboard,
       clearAll,
       isTranslating,
       handleCommaPress,
-      translateTimer
+      translateTimer,
+      addPromptFromLibrary
     };
   }
 });

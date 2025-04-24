@@ -60,6 +60,25 @@ export interface TranslationResult {
   translated: string;
 }
 
+// 提示词库项目接口
+export interface PromptLibraryItem {
+  id: string;
+  text: string;
+  chinese: string;
+  english: string;
+  category: string;
+  subCategory: string;
+}
+
+// 创建提示词库项目请求参数
+export interface CreatePromptLibraryItemParams {
+  text: string;
+  chinese: string;
+  english: string;
+  category: string;
+  subCategory: string;
+}
+
 // 提示词API服务
 export const PromptsAPI = {
   // 获取所有提示词
@@ -131,5 +150,30 @@ export const PromptsAPI = {
       params: { to_english: toEnglish }
     });
     return response.data.results;
+  },
+  
+  // 提示词库相关API
+  
+  // 获取提示词库列表
+  getPromptLibrary: async (): Promise<PromptLibraryItem[]> => {
+    const response = await apiClient.get('/prompt-library');
+    return response.data.items;
+  },
+  
+  // 保存提示词到库
+  savePromptToLibrary: async (item: CreatePromptLibraryItemParams): Promise<PromptLibraryItem> => {
+    const response = await apiClient.post('/prompt-library', item);
+    return response.data;
+  },
+  
+  // 更新提示词库项目
+  updatePromptLibraryItem: async (id: string, item: Partial<CreatePromptLibraryItemParams>): Promise<PromptLibraryItem> => {
+    const response = await apiClient.put(`/prompt-library/${id}`, item);
+    return response.data;
+  },
+  
+  // 删除提示词库项目
+  deletePromptLibraryItem: async (id: string): Promise<void> => {
+    await apiClient.delete(`/prompt-library/${id}`);
   }
 }; 

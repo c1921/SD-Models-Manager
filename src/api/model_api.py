@@ -8,6 +8,7 @@ from pathlib import Path
 from src.utils.file_utils import select_directory
 from src.version.version import VERSION_STR, COMPANY, COPYRIGHT
 from src.api.prompt_api import create_prompt_api
+from src.api.prompt_library_api import create_prompt_library_api
 from src.core.prompt_manager import PromptManager
 
 class PathUpdate(BaseModel):
@@ -117,6 +118,11 @@ def create_api(manager, frontend_url=None):
     # 集成提示词管理API
     prompt_router = create_prompt_api(prompt_manager)
     app.include_router(prompt_router, prefix="/api")
+
+    # 集成提示词库API
+    data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data")
+    prompt_library_router = create_prompt_library_api(data_dir)
+    app.include_router(prompt_library_router, prefix="/api")
 
     @app.get("/api/models")
     async def get_models():
