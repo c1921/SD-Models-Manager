@@ -25,7 +25,10 @@
     </div>
 
     <!-- 提示词库 -->
-    <PromptLibrary @select-prompt="addPromptFromLibrary" />
+    <PromptLibrary 
+      :promptLibraryData="promptLibraryData"
+      @select-prompt="addPromptFromLibrary" 
+    />
 
     <!-- 已拆分的提示词badges -->
     <div class="mb-4">
@@ -138,7 +141,15 @@ export default defineComponent({
     PromptLibrary
   },
   
-  setup() {
+  props: {
+    promptLibraryData: {
+      type: Array as () => PromptLibraryItem[],
+      default: () => [],
+      required: true
+    }
+  },
+  
+  setup(props) {
     // 提示词列表
     const prompts = ref<PromptData[]>([]);
     let sortableInstance: Sortable | null = null;
@@ -146,6 +157,32 @@ export default defineComponent({
     const rawInputValue = ref(''); // 保存原始输入值，解决末尾逗号问题
     const isTranslating = ref(false); // 全局翻译状态
     let translateTimer: number | null = null; // 翻译防抖定时器
+    
+    // 提示词库数据
+    const promptLibrary = ref<PromptLibraryItem[]>(props.promptLibraryData);
+    
+    // 监听提示词库数据变化
+    watch(() => props.promptLibraryData, (newData) => {
+      console.log('[PromptBadges] 提示词库数据更新:', newData.length);
+      promptLibrary.value = newData;
+      
+      // 如果当前有正在编辑的提示词，尝试更新它们的翻译
+      if (prompts.value.length > 0) {
+        prompts.value.forEach((prompt, index) => {
+          // 查找匹配的库中提示词
+          const matchingPrompt = newData.find(p => p.text === prompt.text);
+          if (matchingPrompt) {
+            // 更新翻译
+            prompts.value[index] = {
+              ...prompt,
+              chinese: matchingPrompt.chinese,
+              english: matchingPrompt.english,
+              isTranslating: false
+            };
+          }
+        });
+      }
+    }, { deep: true, immediate: true });
     
     // 计算属性：将提示词转换为文本
     const promptInput = computed({
@@ -270,47 +307,7 @@ export default defineComponent({
       return promptData;
     };
     
-    // 翻译单个提示词
-    const translatePrompt = async (prompt: PromptData, index: number) => {
-      if (!prompt.isTranslating) return prompt;
-      
-      const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(prompt.text);
-      console.log(`[开始翻译] 索引: ${index}, 文本: "${prompt.text}", 方向: ${isEnglish ? '英->中' : '中->英'}`);
-      
-      try {
-        const result = await PromptsAPI.translateText(
-          prompt.text,
-          !isEnglish // 中文->英文 或 英文->中文
-        );
-        
-        if (result && result.translated) {
-          if (isEnglish) {
-            prompt.chinese = result.translated;
-          } else {
-            prompt.english = result.translated;
-          }
-          prompt.isTranslating = false;
-          
-          console.log(`[翻译成功] 文本: "${prompt.text}" -> "${result.translated}"`);
-          
-          // 更新提示词列表中的数据
-          const updatedPrompts = [...prompts.value];
-          updatedPrompts[index] = prompt;
-          prompts.value = updatedPrompts;
-        }
-      } catch (error) {
-        console.error(`[翻译失败] 文本: "${prompt.text}", 错误:`, error);
-        if (/^[a-zA-Z0-9\s\-_,.]+$/.test(prompt.text)) {
-          prompt.chinese = '翻译失败';
-        } else {
-          prompt.english = '翻译失败';
-        }
-        prompt.isTranslating = false;
-      }
-      
-      return prompt;
-    };
-    
+
     // 批量翻译提示词
     const batchTranslatePrompts = async (promptsToTranslate: PromptData[]) => {
       if (promptsToTranslate.length === 0) return;
@@ -534,6 +531,14 @@ export default defineComponent({
       }, 10);
     };
     
+    // 从提示词库中查找匹配的提示词
+    const findMatchingPrompts = (text: string) => {
+      return promptLibrary.value.filter(item => {
+        const regex = new RegExp(`\\b${item.text}\\b`, 'i');
+        return regex.test(text);
+      });
+    };
+    
     // 组件挂载后初始化
     onMounted(() => {
       // 初始化拖拽排序
@@ -561,7 +566,8 @@ export default defineComponent({
       isTranslating,
       handleCommaPress,
       translateTimer,
-      addPromptFromLibrary
+      addPromptFromLibrary,
+      findMatchingPrompts
     };
   }
 });

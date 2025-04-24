@@ -143,6 +143,10 @@ export default defineComponent({
     promptLibraryData: {
       type: Array as () => PromptLibraryItem[],
       default: () => []
+    },
+    selectedPrompt: {
+      type: Object as () => PromptLibraryItem | null,
+      default: null
     }
   },
   
@@ -158,10 +162,6 @@ export default defineComponent({
     const isSaving = ref(false);
     const errorMessage = ref('');
     
-    // 本地新增的分类 (尚未保存到服务器的)
-    const localCategories = ref<string[]>([]);
-    const localSubCategories = ref<{[category: string]: string[]}>({});
-    
     // 新提示词数据
     const newPrompt = ref<NewPromptData>({
       text: '',
@@ -173,12 +173,8 @@ export default defineComponent({
     
     // 一级分类列表
     const categories = computed(() => {
-      // 获取已有分类
-      const categorySet = new Set([
-        ...props.promptLibraryData.map(item => item.category),
-        ...localCategories.value
-      ]);
-      
+      // 直接从props中获取分类
+      const categorySet = new Set(props.promptLibraryData.map(item => item.category));
       return Array.from(categorySet).sort();
     });
     
@@ -195,10 +191,6 @@ export default defineComponent({
         filteredItems.forEach(item => {
           if (item.subCategory) subCategorySet.add(item.subCategory);
         });
-        
-        // 加入本地新增的二级分类
-        const localSubs = localSubCategories.value[newPrompt.value.category] || [];
-        localSubs.forEach(sub => subCategorySet.add(sub));
       }
       
       return Array.from(subCategorySet).sort();
@@ -228,8 +220,6 @@ export default defineComponent({
       newCategory.value = '';
       newSubCategory.value = '';
       errorMessage.value = '';
-      
-      // 注意：不重置localCategories和localSubCategories，因为需要保留用户创建的分类
     };
     
     // 添加新一级分类
@@ -241,9 +231,6 @@ export default defineComponent({
         alert('该分类已存在');
         return;
       }
-      
-      // 添加到本地分类列表
-      localCategories.value.push(newCategory.value.trim());
       
       // 设置新分类
       newPrompt.value.category = newCategory.value.trim();
@@ -260,14 +247,6 @@ export default defineComponent({
         alert('该二级分类已存在');
         return;
       }
-      
-      // 初始化分类的子分类数组（如果不存在）
-      if (!localSubCategories.value[newPrompt.value.category]) {
-        localSubCategories.value[newPrompt.value.category] = [];
-      }
-      
-      // 添加到本地二级分类列表
-      localSubCategories.value[newPrompt.value.category].push(newSubCategory.value.trim());
       
       // 设置新二级分类
       newPrompt.value.subCategory = newSubCategory.value.trim();
@@ -319,6 +298,23 @@ export default defineComponent({
       }
     };
     
+    // 监听选中的提示词变化
+    watch(() => props.selectedPrompt, (selected) => {
+      if (selected) {
+        // 判断是否为英文
+        const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(selected.text);
+        
+        // 如果有选中的提示词，填充到表单
+        newPrompt.value = {
+          text: selected.text,
+          translated: isEnglish ? selected.chinese : selected.english,
+          category: selected.category,
+          subCategory: selected.subCategory,
+          isEnglish: isEnglish
+        };
+      }
+    }, { immediate: true });
+    
     // 保存到提示词库
     const saveToLibrary = async () => {
       if (!canSaveToLibrary.value) return;
@@ -335,6 +331,11 @@ export default defineComponent({
           subCategory: newPrompt.value.subCategory || '默认' // 未选择时使用默认分类
         };
         
+        // 如果是在编辑已有提示词，添加ID
+        if (props.selectedPrompt) {
+          (newItem as any).id = props.selectedPrompt.id;
+        }
+        
         // 保存到后端
         const savedItem = await PromptsAPI.savePromptToLibrary(newItem);
         
@@ -345,7 +346,7 @@ export default defineComponent({
         emit('saved', savedItem);
         
         // 显示成功消息
-        alert('提示词已成功添加到提示词库');
+        alert('提示词已成功' + (props.selectedPrompt ? '更新' : '添加') + '到提示词库');
       } catch (error) {
         console.error('保存提示词失败:', error);
         errorMessage.value = '保存提示词失败，请重试';
@@ -377,8 +378,6 @@ export default defineComponent({
       subCategories,
       canSaveToLibrary,
       errorMessage,
-      localCategories,
-      localSubCategories,
       
       // 方法
       addNewCategory,

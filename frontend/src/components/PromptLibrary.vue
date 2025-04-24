@@ -69,8 +69,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from 'vue';
-import { PromptsAPI } from '../api/prompts';
+import { defineComponent, ref, computed, onMounted, watch } from 'vue';
 import type { PromptLibraryItem } from '../api/prompts';
 
 export default defineComponent({
@@ -78,13 +77,27 @@ export default defineComponent({
   
   emits: ['select-prompt'],
   
+  props: {
+    promptLibraryData: {
+      type: Array as () => PromptLibraryItem[],
+      default: () => [],
+      required: true
+    }
+  },
+  
   setup(props, { emit }) {
     // 提示词库相关
-    const promptLibrary = ref<PromptLibraryItem[]>([]);
+    const promptLibrary = ref<PromptLibraryItem[]>(props.promptLibraryData);
     const selectedCategory = ref('');
     const selectedSubCategory = ref('');
     const isLoading = ref(false);
     const errorMessage = ref('');
+    
+    // 监听提示词库数据变化
+    watch(() => props.promptLibraryData, (newData) => {
+      console.log('[PromptLibrary] 提示词库数据更新:', newData.length);
+      promptLibrary.value = newData;
+    }, { deep: true, immediate: true });
     
     // 一级分类列表
     const categories = computed(() => {
@@ -131,50 +144,11 @@ export default defineComponent({
         isLoading.value = true;
         errorMessage.value = '';
         
-        // 从后端获取提示词库
-        const data = await PromptsAPI.getPromptLibrary();
-        promptLibrary.value = data;
-        
-        console.log('[提示词库] 加载成功，数量:', data.length);
+        // 数据现在从父组件传入，不需要再调用API
+        console.log('[提示词库] 从父组件加载数据，数量:', promptLibrary.value.length);
       } catch (error) {
         console.error('加载提示词库失败:', error);
         errorMessage.value = '加载提示词库失败，请刷新页面重试';
-        
-        // 加载失败时使用示例数据
-        promptLibrary.value = [
-          {
-            id: '1',
-            text: '写实风格',
-            chinese: '写实风格',
-            english: 'realistic style',
-            category: '风格',
-            subCategory: '基础风格'
-          },
-          {
-            id: '2',
-            text: '水彩画',
-            chinese: '水彩画',
-            english: 'watercolor',
-            category: '风格',
-            subCategory: '绘画媒介'
-          },
-          {
-            id: '3',
-            text: '高清',
-            chinese: '高清',
-            english: 'high resolution',
-            category: '质量',
-            subCategory: '分辨率'
-          },
-          {
-            id: '4',
-            text: 'masterpiece',
-            chinese: '杰作',
-            english: 'masterpiece',
-            category: '质量',
-            subCategory: '通用'
-          }
-        ];
       } finally {
         isLoading.value = false;
       }
