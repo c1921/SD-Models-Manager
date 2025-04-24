@@ -8,13 +8,20 @@
           class="textarea textarea-bordered w-full min-h-20" 
           v-model="promptInput"
           @keydown.enter.ctrl="addPrompt"
+          @keydown.comma="handleCommaPress"
           placeholder="输入提示词，按Ctrl+Enter或点击添加按钮添加到列表" 
         ></textarea>
         <div class="flex justify-between items-center">
           <div class="text-xs text-base-content/70">
             提示：输入的文本会按照逗号（全角、半角均可）自动拆分成多个提示词
+            <span v-if="translateTimer !== null" class="ml-2 text-primary animate-pulse">
+              <i class="icon-[tabler--transfer] animate-spin mr-1 size-3"></i>准备翻译...
+            </span>
           </div>
-          <button class="btn btn-primary" @click="addPrompt">添加</button>
+          <button class="btn btn-primary" @click="addPrompt" :disabled="isTranslating">
+            <span v-if="isTranslating">翻译中...</span>
+            <span v-else>添加</span>
+          </button>
         </div>
       </div>
     </div>
@@ -28,6 +35,7 @@
           :key="index"
           class="btn btn-sm btn-outline"
           @click="loadExamplePrompts(category.id)"
+          :disabled="isTranslating"
         >
           {{ category.name }}
         </button>
@@ -46,11 +54,18 @@
             v-for="(prompt, index) in prompts" 
             :key="'prompt-' + index + '-' + prompt.text"
             class="badge badge-lg badge-primary flex items-center gap-2 px-3 py-2 cursor-move min-w-24 h-auto"
+            :class="{ 'opacity-70': prompt.isTranslating }"
             :data-id="index"
           >
             <div class="flex-grow flex flex-col items-center">
-              <div class="text-sm w-full text-center">{{ prompt.chinese }}</div>
-              <div class="text-xs opacity-80 w-full text-center">{{ prompt.english }}</div>
+              <div class="text-sm w-full text-center" :class="{'translating': prompt.isTranslating && /^[a-zA-Z0-9\s\-_,.]+$/.test(prompt.text)}">
+                {{ prompt.chinese }}
+                <i v-if="prompt.isTranslating && /^[a-zA-Z0-9\s\-_,.]+$/.test(prompt.text)" class="icon-[tabler--loader-2] animate-spin ml-1 size-3"></i>
+              </div>
+              <div class="text-xs opacity-80 w-full text-center" :class="{'translating': prompt.isTranslating && !/^[a-zA-Z0-9\s\-_,.]+$/.test(prompt.text)}">
+                {{ prompt.english }}
+                <i v-if="prompt.isTranslating && !/^[a-zA-Z0-9\s\-_,.]+$/.test(prompt.text)" class="icon-[tabler--loader-2] animate-spin ml-1 size-3"></i>
+              </div>
             </div>
             <button 
               class="btn btn-ghost btn-xs btn-circle flex-shrink-0"
@@ -65,10 +80,10 @@
 
     <!-- 导出按钮 -->
     <div class="flex justify-end gap-2">
-      <button class="btn btn-outline" @click="copyToClipboard">
+      <button class="btn btn-outline" @click="copyToClipboard" :disabled="isTranslating || prompts.length === 0">
         <i class="icon-[tabler--copy] mr-1"></i> 复制
       </button>
-      <button class="btn btn-outline" @click="clearAll">
+      <button class="btn btn-outline" @click="clearAll" :disabled="isTranslating || prompts.length === 0">
         <i class="icon-[tabler--trash] mr-1"></i> 清空
       </button>
     </div>
@@ -76,14 +91,16 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, nextTick, computed } from 'vue';
+import { defineComponent, ref, onMounted, nextTick, computed, watch, onBeforeUnmount } from 'vue';
 import Sortable from 'sortablejs';
+import { PromptsAPI } from '../api/prompts'; // 导入API
 
 // 提示词数据结构
 interface PromptData {
   text: string;     // 原始文本
   chinese: string;  // 中文显示
   english: string;  // 英文显示
+  isTranslating?: boolean; // 是否正在翻译
 }
 
 // 示例提示词数据
@@ -173,6 +190,8 @@ export default defineComponent({
     let sortableInstance: Sortable | null = null;
     let isUpdatingFromTextarea = false; // 标记是否从文本框更新，避免循环
     const rawInputValue = ref(''); // 保存原始输入值，解决末尾逗号问题
+    const isTranslating = ref(false); // 全局翻译状态
+    let translateTimer: number | null = null; // 翻译防抖定时器
     
     // 计算属性：将提示词转换为文本
     const promptInput = computed({
@@ -188,6 +207,11 @@ export default defineComponent({
       },
       set: (newValue: string) => {
         if (isUpdatingFromTextarea) return;
+        
+        // 判断是否输入了新的逗号
+        const hasNewComma = 
+          (rawInputValue.value && !rawInputValue.value.endsWith(',') && !rawInputValue.value.endsWith('，')) && 
+          (newValue.endsWith(',') || newValue.endsWith('，'));
         
         isUpdatingFromTextarea = true;
         // 保存原始输入值
@@ -206,37 +230,196 @@ export default defineComponent({
         nextTick(() => {
           initSortable();
           isUpdatingFromTextarea = false;
+          
+          // 如果输入了新的逗号并且有需要翻译的提示词，则触发防抖翻译
+          if (hasNewComma) {
+            const needTranslation = newPrompts.filter(p => p.isTranslating);
+            if (needTranslation.length > 0) {
+              console.log('[检测到逗号，准备翻译]', needTranslation);
+              debounceTranslate();
+            }
+          }
         });
       }
     });
+    
+    // 防抖翻译函数
+    const debounceTranslate = () => {
+      // 清除之前的定时器
+      if (translateTimer !== null) {
+        clearTimeout(translateTimer);
+      }
+      
+      // 设置新的定时器
+      translateTimer = window.setTimeout(() => {
+        console.log('[触发防抖翻译]');
+        const needTranslation = prompts.value.filter(p => p.isTranslating);
+        if (needTranslation.length > 0) {
+          batchTranslatePrompts(prompts.value);
+        }
+        translateTimer = null;
+      }, 1000); // 1秒防抖延迟
+    };
     
     // 创建提示词对象
     const createPromptData = (text: string): PromptData => {
       // 检查是否是英文
       const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(text);
       
-      // 如果是英文文本
-      if (isEnglish) {
-        // 这里可以添加英译中的逻辑，目前简单处理
-        return {
-          text: text,
-          english: text,
-          chinese: '翻译中...' // 实际应用中可以接入翻译API
-        };
-      } 
-      // 如果是中文文本
-      else {
-        return {
-          text: text,
-          chinese: text,
-          english: translationMap[text] || text // 尝试从字典获取翻译，没有则使用原文
-        };
+      console.log(`[创建提示词] 文本: "${text}", 是否英文: ${isEnglish}`);
+      
+      // 初始创建提示词对象
+      const promptData: PromptData = {
+        text: text,
+        chinese: isEnglish ? '翻译中...' : text,
+        english: isEnglish ? text : '翻译中...',
+        isTranslating: true
+      };
+      
+      // 使用已有翻译
+      if (isEnglish && translationMap[text]) {
+        promptData.chinese = translationMap[text];
+        promptData.isTranslating = false;
+        console.log(`[本地翻译] 英->中: "${text}" -> "${translationMap[text]}"`);
+      } else if (!isEnglish && translationMap[text]) {
+        promptData.english = translationMap[text];
+        promptData.isTranslating = false;
+        console.log(`[本地翻译] 中->英: "${text}" -> "${translationMap[text]}"`);
+      } else {
+        console.log(`[需要翻译] 文本: "${text}", 当前状态:`, promptData);
+      }
+      
+      return promptData;
+    };
+    
+    // 翻译单个提示词
+    const translatePrompt = async (prompt: PromptData, index: number) => {
+      if (!prompt.isTranslating) return prompt;
+      
+      const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(prompt.text);
+      console.log(`[开始翻译] 索引: ${index}, 文本: "${prompt.text}", 方向: ${isEnglish ? '英->中' : '中->英'}`);
+      
+      try {
+        const result = await PromptsAPI.translateText(
+          prompt.text,
+          !isEnglish // 中文->英文 或 英文->中文
+        );
+        
+        if (result && result.translated) {
+          if (isEnglish) {
+            prompt.chinese = result.translated;
+          } else {
+            prompt.english = result.translated;
+          }
+          prompt.isTranslating = false;
+          
+          console.log(`[翻译成功] 文本: "${prompt.text}" -> "${result.translated}"`);
+          
+          // 更新提示词列表中的数据
+          const updatedPrompts = [...prompts.value];
+          updatedPrompts[index] = prompt;
+          prompts.value = updatedPrompts;
+        }
+      } catch (error) {
+        console.error(`[翻译失败] 文本: "${prompt.text}", 错误:`, error);
+        if (/^[a-zA-Z0-9\s\-_,.]+$/.test(prompt.text)) {
+          prompt.chinese = '翻译失败';
+        } else {
+          prompt.english = '翻译失败';
+        }
+        prompt.isTranslating = false;
+      }
+      
+      return prompt;
+    };
+    
+    // 批量翻译提示词
+    const batchTranslatePrompts = async (promptsToTranslate: PromptData[]) => {
+      if (promptsToTranslate.length === 0) return;
+      
+      console.log('[开始批量翻译]', {
+        总数: promptsToTranslate.length,
+        待翻译: promptsToTranslate.filter(p => p.isTranslating).length
+      });
+      
+      const chinesePrompts: { text: string, index: number }[] = [];
+      const englishPrompts: { text: string, index: number }[] = [];
+      
+      // 分类需要翻译的提示词
+      promptsToTranslate.forEach((prompt, index) => {
+        if (prompt.isTranslating) {
+          const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(prompt.text);
+          if (isEnglish) {
+            englishPrompts.push({ text: prompt.text, index });
+          } else {
+            chinesePrompts.push({ text: prompt.text, index });
+          }
+        }
+      });
+      
+      console.log('[翻译分类]', {
+        英文数量: englishPrompts.length,
+        中文数量: chinesePrompts.length
+      });
+      
+      isTranslating.value = true;
+      
+      try {
+        // 英文到中文的批量翻译
+        if (englishPrompts.length > 0) {
+          console.log('[开始英->中翻译]', englishPrompts.map(p => p.text));
+          const textsToTranslate = englishPrompts.map(item => item.text);
+          const results = await PromptsAPI.batchTranslate(textsToTranslate, false);
+          
+          console.log('[英->中翻译结果]', results);
+          
+          results.forEach((result, i) => {
+            const index = englishPrompts[i].index;
+            prompts.value[index].chinese = result.translated;
+            prompts.value[index].isTranslating = false;
+          });
+        }
+        
+        // 中文到英文的批量翻译
+        if (chinesePrompts.length > 0) {
+          console.log('[开始中->英翻译]', chinesePrompts.map(p => p.text));
+          const textsToTranslate = chinesePrompts.map(item => item.text);
+          const results = await PromptsAPI.batchTranslate(textsToTranslate, true);
+          
+          console.log('[中->英翻译结果]', results);
+          
+          results.forEach((result, i) => {
+            const index = chinesePrompts[i].index;
+            prompts.value[index].english = result.translated;
+            prompts.value[index].isTranslating = false;
+          });
+        }
+      } catch (error) {
+        console.error('[批量翻译失败]', error);
+        // 标记翻译失败
+        [...englishPrompts, ...chinesePrompts].forEach(item => {
+          const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(prompts.value[item.index].text);
+          if (isEnglish) {
+            prompts.value[item.index].chinese = '翻译失败';
+          } else {
+            prompts.value[item.index].english = '翻译失败';
+          }
+          prompts.value[item.index].isTranslating = false;
+        });
+      } finally {
+        console.log('[批量翻译完成]', {
+          总数: promptsToTranslate.length,
+          剩余未翻译: prompts.value.filter(p => p.isTranslating).length
+        });
+        isTranslating.value = false;
       }
     };
     
     // 添加提示词
-    const addPrompt = () => {
+    const addPrompt = async () => {
       if (!promptInput.value.trim()) return;
+      
+      console.log('[添加提示词] 输入:', promptInput.value);
       
       // 按分隔符拆分提示词并添加到列表
       const inputText = promptInput.value;
@@ -248,11 +431,14 @@ export default defineComponent({
         .filter(p => p !== '')
         .map(createPromptData);
       
+      console.log('[拆分结果]', newPrompts);
+      
       // 添加到现有列表，而不是替换
       prompts.value = [...prompts.value, ...newPrompts];
       
       // 清空输入框
       setTimeout(() => {
+        rawInputValue.value = '';
         // 使用setTimeout避免与计算属性的自动同步冲突
         isUpdatingFromTextarea = false;
         // 不需要清空，因为会自动同步
@@ -261,6 +447,19 @@ export default defineComponent({
       // 重新初始化拖拽排序
       nextTick(() => {
         initSortable();
+        
+        // 批量翻译新添加的提示词
+        const needTranslation = newPrompts.filter(p => p.isTranslating);
+        if (needTranslation.length > 0) {
+          console.log('[需要翻译的新提示词]', needTranslation);
+          // 清除可能存在的防抖定时器
+          if (translateTimer !== null) {
+            clearTimeout(translateTimer);
+            translateTimer = null;
+          }
+          // 立即翻译，不使用防抖
+          batchTranslatePrompts(prompts.value);
+        }
       });
     };
     
@@ -291,6 +490,12 @@ export default defineComponent({
         // 重新初始化拖拽排序
         nextTick(() => {
           initSortable();
+          
+          // 批量翻译需要翻译的提示词
+          const needTranslation = promptDataList.filter(p => p.isTranslating);
+          if (needTranslation.length > 0) {
+            batchTranslatePrompts(prompts.value);
+          }
         });
       }
     };
@@ -332,8 +537,22 @@ export default defineComponent({
     const copyToClipboard = () => {
       if (prompts.value.length === 0) return;
       
+      // 检查是否有正在翻译的提示词
+      const hasTranslating = prompts.value.some(p => p.isTranslating);
+      if (hasTranslating) {
+        if (!confirm('有部分提示词正在翻译中，是否继续复制？')) {
+          return;
+        }
+      }
+      
       // 获取英文提示词并拼接，始终使用半角逗号加空格
-      const text = prompts.value.map(p => p.english).join(', ');
+      const text = prompts.value.map(p => {
+        // 使用英文，如果正在翻译中则使用原始文本
+        return p.isTranslating ? 
+          (/^[a-zA-Z0-9\s\-_,.]+$/.test(p.text) ? p.text : '翻译中...') : 
+          p.english;
+      }).join(', ');
+      
       navigator.clipboard.writeText(text)
         .then(() => {
           alert('已复制到剪贴板');
@@ -353,6 +572,18 @@ export default defineComponent({
       }
     };
     
+    // 处理逗号按键
+    const handleCommaPress = () => {
+      console.log('[检测到逗号按键]');
+      // 延迟处理，确保v-model更新
+      setTimeout(() => {
+        const needTranslation = prompts.value.filter(p => p.isTranslating);
+        if (needTranslation.length > 0) {
+          debounceTranslate();
+        }
+      }, 10);
+    };
+    
     // 组件挂载后初始化Sortable.js
     onMounted(() => {
       nextTick(() => {
@@ -360,6 +591,14 @@ export default defineComponent({
           initSortable();
         }
       });
+    });
+    
+    // 组件卸载前清除定时器
+    onBeforeUnmount(() => {
+      if (translateTimer !== null) {
+        clearTimeout(translateTimer);
+        translateTimer = null;
+      }
     });
     
     return {
@@ -370,7 +609,10 @@ export default defineComponent({
       removePrompt,
       loadExamplePrompts,
       copyToClipboard,
-      clearAll
+      clearAll,
+      isTranslating,
+      handleCommaPress,
+      translateTimer
     };
   }
 });
@@ -385,5 +627,10 @@ export default defineComponent({
   overflow: visible;
   height: auto !important;
   white-space: normal;
+}
+
+.translating {
+  font-style: italic;
+  opacity: 0.7;
 }
 </style> 
