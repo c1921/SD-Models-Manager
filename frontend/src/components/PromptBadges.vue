@@ -19,41 +19,6 @@
       </div>
     </div>
 
-    <!-- 颜色选择 -->
-    <div class="mb-4">
-      <label class="block text-sm font-medium mb-1">Badge 颜色</label>
-      <div class="join">
-        <button 
-          class="join-item btn btn-sm" 
-          :class="badgeColor === 'badge-primary' ? 'btn-active' : ''"
-          @click="setBadgeColor('badge-primary')"
-        >
-          主色
-        </button>
-        <button 
-          class="join-item btn btn-sm" 
-          :class="badgeColor === 'badge-secondary' ? 'btn-active' : ''"
-          @click="setBadgeColor('badge-secondary')"
-        >
-          次色
-        </button>
-        <button 
-          class="join-item btn btn-sm" 
-          :class="badgeColor === 'badge-accent' ? 'btn-active' : ''"
-          @click="setBadgeColor('badge-accent')"
-        >
-          强调
-        </button>
-        <button 
-          class="join-item btn btn-sm" 
-          :class="badgeColor === 'badge-neutral' ? 'btn-active' : ''"
-          @click="setBadgeColor('badge-neutral')"
-        >
-          中性
-        </button>
-      </div>
-    </div>
-
     <!-- 示例提示词 -->
     <div class="mb-4">
       <label class="block text-sm font-medium mb-2">示例提示词</label>
@@ -80,8 +45,7 @@
           <div 
             v-for="(prompt, index) in prompts" 
             :key="'prompt-' + index + '-' + prompt.text"
-            class="badge badge-lg flex items-center gap-2 px-3 py-2 cursor-move min-w-24 h-auto"
-            :class="badgeColor"
+            class="badge badge-lg badge-primary flex items-center gap-2 px-3 py-2 cursor-move min-w-24 h-auto"
             :data-id="index"
           >
             <div class="flex-grow flex flex-col items-center">
@@ -112,7 +76,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, nextTick, watch, computed } from 'vue';
+import { defineComponent, ref, onMounted, nextTick, computed } from 'vue';
 import Sortable from 'sortablejs';
 
 // 提示词数据结构
@@ -205,8 +169,6 @@ export default defineComponent({
   setup() {
     // 提示词列表
     const prompts = ref<PromptData[]>([]);
-    const separator = ref(/[,，]/); // 支持全角和半角逗号
-    const badgeColor = ref('badge-primary');
     const exampleCategories = ref<ExampleCategory[]>(Object.values(examplePromptsData));
     let sortableInstance: Sortable | null = null;
     let isUpdatingFromTextarea = false; // 标记是否从文本框更新，避免循环
@@ -308,11 +270,6 @@ export default defineComponent({
       // 文本框会通过计算属性自动更新
     };
     
-    // 设置badge颜色
-    const setBadgeColor = (color: string) => {
-      badgeColor.value = color;
-    };
-    
     // 加载示例提示词
     const loadExamplePrompts = (categoryId: string) => {
       const category = examplePromptsData[categoryId];
@@ -408,11 +365,9 @@ export default defineComponent({
     return {
       promptInput,
       prompts,
-      badgeColor,
       exampleCategories,
       addPrompt,
       removePrompt,
-      setBadgeColor,
       loadExamplePrompts,
       copyToClipboard,
       clearAll
