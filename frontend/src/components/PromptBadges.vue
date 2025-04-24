@@ -3,46 +3,19 @@
     <!-- 输入区域 -->
     <div class="mb-4">
       <label class="block text-sm font-medium mb-1">提示词输入</label>
-      <div class="flex gap-2">
-        <input 
-          type="text" 
-          class="input input-bordered flex-grow" 
+      <div class="flex flex-col gap-2">
+        <textarea 
+          class="textarea textarea-bordered w-full min-h-20" 
           v-model="promptInput"
-          @keydown.enter="addPrompt"
-          placeholder="输入提示词，按回车或点击添加按钮拆分显示" 
-        />
-        <button class="btn btn-primary" @click="addPrompt">添加</button>
-      </div>
-      <div class="text-xs text-base-content/70 mt-1">
-        提示：输入的文本会按照逗号、空格等分隔符自动拆分
-      </div>
-    </div>
-
-    <!-- 分隔符选择 -->
-    <div class="mb-4">
-      <label class="block text-sm font-medium mb-1">分隔符选择</label>
-      <div class="join">
-        <button 
-          class="join-item btn btn-sm" 
-          :class="separator === ',' ? 'btn-active' : ''"
-          @click="setSeparator(',')"
-        >
-          逗号 (,)
-        </button>
-        <button 
-          class="join-item btn btn-sm" 
-          :class="separator === ' ' ? 'btn-active' : ''"
-          @click="setSeparator(' ')"
-        >
-          空格
-        </button>
-        <button 
-          class="join-item btn btn-sm" 
-          :class="separator === '\n' ? 'btn-active' : ''"
-          @click="setSeparator('\n')"
-        >
-          换行
-        </button>
+          @keydown.enter.ctrl="addPrompt"
+          placeholder="输入提示词，按Ctrl+Enter或点击添加按钮添加到列表" 
+        ></textarea>
+        <div class="flex justify-between items-center">
+          <div class="text-xs text-base-content/70">
+            提示：输入的文本会按照逗号（全角、半角均可）自动拆分成多个提示词
+          </div>
+          <button class="btn btn-primary" @click="addPrompt">添加</button>
+        </div>
       </div>
     </div>
 
@@ -139,7 +112,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, nextTick } from 'vue';
+import { defineComponent, ref, onMounted, nextTick, watch, computed } from 'vue';
 import Sortable from 'sortablejs';
 
 // 提示词数据结构
@@ -230,12 +203,50 @@ export default defineComponent({
   name: 'PromptBadges',
   
   setup() {
-    const promptInput = ref('');
+    // 提示词列表
     const prompts = ref<PromptData[]>([]);
-    const separator = ref(',');
+    const separator = ref(/[,，]/); // 支持全角和半角逗号
     const badgeColor = ref('badge-primary');
     const exampleCategories = ref<ExampleCategory[]>(Object.values(examplePromptsData));
     let sortableInstance: Sortable | null = null;
+    let isUpdatingFromTextarea = false; // 标记是否从文本框更新，避免循环
+    const rawInputValue = ref(''); // 保存原始输入值，解决末尾逗号问题
+    
+    // 计算属性：将提示词转换为文本
+    const promptInput = computed({
+      get: () => {
+        // 如果原始输入值以逗号结尾，保留这个逗号
+        if (rawInputValue.value.endsWith(',') || rawInputValue.value.endsWith('，')) {
+          return rawInputValue.value;
+        }
+        
+        // 否则返回从提示词列表生成的文本
+        if (prompts.value.length === 0) return '';
+        return prompts.value.map(p => p.text).join(', ');
+      },
+      set: (newValue: string) => {
+        if (isUpdatingFromTextarea) return;
+        
+        isUpdatingFromTextarea = true;
+        // 保存原始输入值
+        rawInputValue.value = newValue;
+        
+        // 按逗号（全角和半角）拆分提示词
+        const newPrompts = newValue
+          .split(/[,，]/)
+          .map(p => p.trim())
+          .filter(p => p !== '')
+          .map(createPromptData);
+        
+        // 更新提示词列表，这里使用的是替换操作，不是拆分添加
+        prompts.value = newPrompts;
+        
+        nextTick(() => {
+          initSortable();
+          isUpdatingFromTextarea = false;
+        });
+      }
+    });
     
     // 创建提示词对象
     const createPromptData = (text: string): PromptData => {
@@ -265,18 +276,25 @@ export default defineComponent({
     const addPrompt = () => {
       if (!promptInput.value.trim()) return;
       
-      // 按分隔符拆分提示词
-      const newPrompts = promptInput.value
-        .split(separator.value)
+      // 按分隔符拆分提示词并添加到列表
+      const inputText = promptInput.value;
+      isUpdatingFromTextarea = true; // 防止循环更新
+      
+      const newPrompts = inputText
+        .split(/[,，]/)
         .map(p => p.trim())
         .filter(p => p !== '')
         .map(createPromptData);
       
-      // 添加到提示词列表
+      // 添加到现有列表，而不是替换
       prompts.value = [...prompts.value, ...newPrompts];
       
       // 清空输入框
-      promptInput.value = '';
+      setTimeout(() => {
+        // 使用setTimeout避免与计算属性的自动同步冲突
+        isUpdatingFromTextarea = false;
+        // 不需要清空，因为会自动同步
+      }, 0);
       
       // 重新初始化拖拽排序
       nextTick(() => {
@@ -287,11 +305,7 @@ export default defineComponent({
     // 移除提示词
     const removePrompt = (index: number) => {
       prompts.value.splice(index, 1);
-    };
-    
-    // 设置分隔符
-    const setSeparator = (sep: string) => {
-      separator.value = sep;
+      // 文本框会通过计算属性自动更新
     };
     
     // 设置badge颜色
@@ -351,6 +365,7 @@ export default defineComponent({
             const movedItem = temp.splice(oldIndex, 1)[0];
             temp.splice(newIndex, 0, movedItem);
             prompts.value = temp;
+            // 文本框会通过计算属性自动更新
           }
         }
       });
@@ -360,7 +375,7 @@ export default defineComponent({
     const copyToClipboard = () => {
       if (prompts.value.length === 0) return;
       
-      // 获取英文提示词并拼接
+      // 获取英文提示词并拼接，始终使用半角逗号加空格
       const text = prompts.value.map(p => p.english).join(', ');
       navigator.clipboard.writeText(text)
         .then(() => {
@@ -377,6 +392,7 @@ export default defineComponent({
       
       if (confirm('确认清空所有提示词？')) {
         prompts.value = [];
+        // 文本框会通过计算属性自动更新
       }
     };
     
@@ -392,12 +408,10 @@ export default defineComponent({
     return {
       promptInput,
       prompts,
-      separator,
       badgeColor,
       exampleCategories,
       addPrompt,
       removePrompt,
-      setSeparator,
       setBadgeColor,
       loadExamplePrompts,
       copyToClipboard,
