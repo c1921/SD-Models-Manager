@@ -158,6 +158,10 @@ export default defineComponent({
     const isSaving = ref(false);
     const errorMessage = ref('');
     
+    // 本地新增的分类 (尚未保存到服务器的)
+    const localCategories = ref<string[]>([]);
+    const localSubCategories = ref<{[category: string]: string[]}>({});
+    
     // 新提示词数据
     const newPrompt = ref<NewPromptData>({
       text: '',
@@ -169,20 +173,34 @@ export default defineComponent({
     
     // 一级分类列表
     const categories = computed(() => {
-      const categorySet = new Set(props.promptLibraryData.map(item => item.category));
+      // 获取已有分类
+      const categorySet = new Set([
+        ...props.promptLibraryData.map(item => item.category),
+        ...localCategories.value
+      ]);
+      
       return Array.from(categorySet).sort();
     });
     
     // 二级分类列表 (根据选择的一级分类筛选)
     const subCategories = computed(() => {
-      let items = props.promptLibraryData;
+      let subCategorySet = new Set<string>();
       
-      // 如果在模态框中选择了一级分类，则按该分类筛选
+      // 如果选择了一级分类，则按该分类筛选
       if (newPrompt.value.category) {
-        items = items.filter(item => item.category === newPrompt.value.category);
+        // 从现有数据中获取二级分类
+        const filteredItems = props.promptLibraryData.filter(
+          item => item.category === newPrompt.value.category
+        );
+        filteredItems.forEach(item => {
+          if (item.subCategory) subCategorySet.add(item.subCategory);
+        });
+        
+        // 加入本地新增的二级分类
+        const localSubs = localSubCategories.value[newPrompt.value.category] || [];
+        localSubs.forEach(sub => subCategorySet.add(sub));
       }
       
-      const subCategorySet = new Set(items.map(item => item.subCategory));
       return Array.from(subCategorySet).sort();
     });
     
@@ -210,6 +228,8 @@ export default defineComponent({
       newCategory.value = '';
       newSubCategory.value = '';
       errorMessage.value = '';
+      
+      // 注意：不重置localCategories和localSubCategories，因为需要保留用户创建的分类
     };
     
     // 添加新一级分类
@@ -222,6 +242,9 @@ export default defineComponent({
         return;
       }
       
+      // 添加到本地分类列表
+      localCategories.value.push(newCategory.value.trim());
+      
       // 设置新分类
       newPrompt.value.category = newCategory.value.trim();
       showAddCategory.value = false;
@@ -230,13 +253,21 @@ export default defineComponent({
     
     // 添加新二级分类
     const addNewSubCategory = () => {
-      if (newSubCategory.value.trim() === '') return;
+      if (newSubCategory.value.trim() === '' || !newPrompt.value.category) return;
       
       // 检查是否已存在
       if (subCategories.value.includes(newSubCategory.value.trim())) {
         alert('该二级分类已存在');
         return;
       }
+      
+      // 初始化分类的子分类数组（如果不存在）
+      if (!localSubCategories.value[newPrompt.value.category]) {
+        localSubCategories.value[newPrompt.value.category] = [];
+      }
+      
+      // 添加到本地二级分类列表
+      localSubCategories.value[newPrompt.value.category].push(newSubCategory.value.trim());
       
       // 设置新二级分类
       newPrompt.value.subCategory = newSubCategory.value.trim();
@@ -346,6 +377,8 @@ export default defineComponent({
       subCategories,
       canSaveToLibrary,
       errorMessage,
+      localCategories,
+      localSubCategories,
       
       // 方法
       addNewCategory,
