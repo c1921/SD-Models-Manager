@@ -7,9 +7,8 @@
         <textarea 
           class="textarea textarea-bordered w-full min-h-20" 
           v-model="promptInput"
-          @keydown.enter.ctrl="addPrompt"
           @keydown.comma="handleCommaPress"
-          placeholder="输入提示词，按Ctrl+Enter或点击添加按钮添加到列表" 
+          placeholder="输入提示词，用逗号（全角、半角均可）分隔，输入后会自动添加到列表" 
         ></textarea>
         <div class="flex justify-between items-center">
           <div class="text-xs text-base-content/70">
@@ -17,11 +16,10 @@
             <span v-if="translateTimer !== null" class="ml-2 text-primary animate-pulse">
               <i class="icon-[tabler--transfer] animate-spin mr-1 size-3"></i>准备翻译...
             </span>
+            <span v-if="isTranslating" class="ml-2 text-secondary animate-pulse">
+              <i class="icon-[tabler--language] animate-spin mr-1 size-3"></i>翻译中...
+            </span>
           </div>
-          <button class="btn btn-primary" @click="addPrompt" :disabled="isTranslating">
-            <span v-if="isTranslating">翻译中...</span>
-            <span v-else>添加</span>
-          </button>
         </div>
       </div>
     </div>
@@ -91,7 +89,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, nextTick, computed, watch, onBeforeUnmount } from 'vue';
+import { defineComponent, ref, onMounted, nextTick, computed, onBeforeUnmount } from 'vue';
 import Sortable from 'sortablejs';
 import { PromptsAPI } from '../api/prompts'; // 导入API
 
@@ -218,14 +216,38 @@ export default defineComponent({
         rawInputValue.value = newValue;
         
         // 按逗号（全角和半角）拆分提示词
-        const newPrompts = newValue
+        const newPromptsText = newValue
           .split(/[,，]/)
           .map(p => p.trim())
-          .filter(p => p !== '')
+          .filter(p => p !== '');
+          
+        // 将拆分的文本转换为PromptData对象
+        const currentTexts = prompts.value.map(p => p.text);
+        const newPromptObjects = newPromptsText
+          .filter(text => !currentTexts.includes(text)) // 仅处理新添加的提示词
           .map(createPromptData);
+          
+        // 使用文本匹配现有提示词，保持顺序一致
+        const updatedPrompts: PromptData[] = [];
+        for (const text of newPromptsText) {
+          // 查找现有的提示词
+          const existingPrompt = prompts.value.find(p => p.text === text);
+          if (existingPrompt) {
+            updatedPrompts.push(existingPrompt);
+          } else {
+            // 查找新创建的提示词
+            const newPrompt = newPromptObjects.find(p => p.text === text);
+            if (newPrompt) {
+              updatedPrompts.push(newPrompt);
+            }
+          }
+        }
         
-        // 更新提示词列表，这里使用的是替换操作，不是拆分添加
-        prompts.value = newPrompts;
+        // 更新提示词列表
+        prompts.value = updatedPrompts;
+        
+        console.log('[输入更新] 文本:', newValue);
+        console.log('[输入更新] 解析结果:', updatedPrompts);
         
         nextTick(() => {
           initSortable();
@@ -233,7 +255,7 @@ export default defineComponent({
           
           // 如果输入了新的逗号并且有需要翻译的提示词，则触发防抖翻译
           if (hasNewComma) {
-            const needTranslation = newPrompts.filter(p => p.isTranslating);
+            const needTranslation = updatedPrompts.filter(p => p.isTranslating);
             if (needTranslation.length > 0) {
               console.log('[检测到逗号，准备翻译]', needTranslation);
               debounceTranslate();
@@ -415,58 +437,16 @@ export default defineComponent({
       }
     };
     
-    // 添加提示词
-    const addPrompt = async () => {
-      if (!promptInput.value.trim()) return;
-      
-      console.log('[添加提示词] 输入:', promptInput.value);
-      
-      // 按分隔符拆分提示词并添加到列表
-      const inputText = promptInput.value;
-      isUpdatingFromTextarea = true; // 防止循环更新
-      
-      const newPrompts = inputText
-        .split(/[,，]/)
-        .map(p => p.trim())
-        .filter(p => p !== '')
-        .map(createPromptData);
-      
-      console.log('[拆分结果]', newPrompts);
-      
-      // 添加到现有列表，而不是替换
-      prompts.value = [...prompts.value, ...newPrompts];
-      
-      // 清空输入框
-      setTimeout(() => {
-        rawInputValue.value = '';
-        // 使用setTimeout避免与计算属性的自动同步冲突
-        isUpdatingFromTextarea = false;
-        // 不需要清空，因为会自动同步
-      }, 0);
-      
-      // 重新初始化拖拽排序
-      nextTick(() => {
-        initSortable();
-        
-        // 批量翻译新添加的提示词
-        const needTranslation = newPrompts.filter(p => p.isTranslating);
-        if (needTranslation.length > 0) {
-          console.log('[需要翻译的新提示词]', needTranslation);
-          // 清除可能存在的防抖定时器
-          if (translateTimer !== null) {
-            clearTimeout(translateTimer);
-            translateTimer = null;
-          }
-          // 立即翻译，不使用防抖
-          batchTranslatePrompts(prompts.value);
-        }
-      });
-    };
-    
     // 移除提示词
     const removePrompt = (index: number) => {
       prompts.value.splice(index, 1);
-      // 文本框会通过计算属性自动更新
+      
+      // 更新输入框，但不触发计算属性的set方法
+      isUpdatingFromTextarea = true;
+      rawInputValue.value = prompts.value.map(p => p.text).join(', ');
+      setTimeout(() => {
+        isUpdatingFromTextarea = false;
+      }, 0);
     };
     
     // 加载示例提示词
@@ -479,12 +459,39 @@ export default defineComponent({
         // 如果已有提示词，询问是否替换
         if (prompts.value.length > 0) {
           if (confirm('是否要替换当前的提示词列表？点击确定替换，点击取消则添加到现有列表')) {
+            // 替换现有列表
             prompts.value = [...promptDataList];
+            // 更新输入框，但不触发计算属性的set方法
+            isUpdatingFromTextarea = true;
+            rawInputValue.value = promptDataList.map(p => p.text).join(', ');
+            setTimeout(() => {
+              isUpdatingFromTextarea = false;
+            }, 0);
           } else {
-            prompts.value = [...prompts.value, ...promptDataList];
+            // 添加到现有列表，避免重复
+            const currentTexts = prompts.value.map(p => p.text);
+            const newPrompts = promptDataList.filter(p => !currentTexts.includes(p.text));
+            
+            if (newPrompts.length > 0) {
+              prompts.value = [...prompts.value, ...newPrompts];
+              
+              // 更新输入框，但不触发计算属性的set方法
+              isUpdatingFromTextarea = true;
+              rawInputValue.value = prompts.value.map(p => p.text).join(', ');
+              setTimeout(() => {
+                isUpdatingFromTextarea = false;
+              }, 0);
+            }
           }
         } else {
           prompts.value = [...promptDataList];
+          
+          // 更新输入框，但不触发计算属性的set方法
+          isUpdatingFromTextarea = true;
+          rawInputValue.value = promptDataList.map(p => p.text).join(', ');
+          setTimeout(() => {
+            isUpdatingFromTextarea = false;
+          }, 0);
         }
         
         // 重新初始化拖拽排序
@@ -527,7 +534,14 @@ export default defineComponent({
             const movedItem = temp.splice(oldIndex, 1)[0];
             temp.splice(newIndex, 0, movedItem);
             prompts.value = temp;
-            // 文本框会通过计算属性自动更新
+            
+            // 同步更新输入框，但不触发计算属性的set方法
+            isUpdatingFromTextarea = true;
+            rawInputValue.value = prompts.value.map(p => p.text).join(', ');
+            console.log('[拖拽排序] 同步更新输入框:', rawInputValue.value);
+            setTimeout(() => {
+              isUpdatingFromTextarea = false;
+            }, 0);
           }
         }
       });
@@ -568,7 +582,13 @@ export default defineComponent({
       
       if (confirm('确认清空所有提示词？')) {
         prompts.value = [];
-        // 文本框会通过计算属性自动更新
+        
+        // 更新输入框，但不触发计算属性的set方法
+        isUpdatingFromTextarea = true;
+        rawInputValue.value = '';
+        setTimeout(() => {
+          isUpdatingFromTextarea = false;
+        }, 0);
       }
     };
     
@@ -605,7 +625,6 @@ export default defineComponent({
       promptInput,
       prompts,
       exampleCategories,
-      addPrompt,
       removePrompt,
       loadExamplePrompts,
       copyToClipboard,
