@@ -33,14 +33,14 @@ const router = createRouter({
 })
 
 // 全局前置守卫，设置页面标题
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   // 设置页面标题
   document.title = `${to.meta.title || 'SD模型管理器'}`
   next()
 })
 
 // 路由切换后重新初始化FlyonUI组件
-router.afterEach(async (to, from, failure) => {
+router.afterEach(async (_to, _from, failure) => {
   if (!failure) setTimeout(() => window.HSStaticMethods?.autoInit?.(), 100);
 });
 
