@@ -63,7 +63,6 @@ export interface TranslationResult {
 // 提示词库项目接口
 export interface PromptLibraryItem {
   id: string;
-  text: string;
   chinese: string;
   english: string;
   category: string;
@@ -72,7 +71,6 @@ export interface PromptLibraryItem {
 
 // 创建提示词库项目请求参数
 export interface CreatePromptLibraryItemParams {
-  text: string;
   chinese: string;
   english: string;
   category: string;

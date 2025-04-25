@@ -179,8 +179,13 @@ export default defineComponent({
       // 如果当前有正在编辑的提示词，尝试更新它们的翻译
       if (prompts.value.length > 0) {
         prompts.value.forEach((prompt, index) => {
-          // 查找匹配的库中提示词
-          const matchingPrompt = newData.find(p => p.text === prompt.text);
+          // 查找匹配的库中提示词（通过英文或中文匹配）
+          const matchingPrompt = newData.find(p => 
+            (p.english === prompt.text) || 
+            (p.chinese === prompt.text) ||
+            (p.english === prompt.english && p.chinese === prompt.chinese)
+          );
+          
           if (matchingPrompt) {
             // 更新翻译
             prompts.value[index] = {
@@ -402,14 +407,16 @@ export default defineComponent({
     // 从提示词库添加提示词
     const addPromptFromLibrary = (libraryItem: PromptLibraryItem) => {
       // 检查是否已存在
-      const exists = prompts.value.some(p => p.text === libraryItem.text);
+      const exists = prompts.value.some(p => 
+        (p.chinese === libraryItem.chinese && p.english === libraryItem.english)
+      );
       if (exists) {
         return; // 已存在则不添加
       }
       
       // 创建新提示词对象
       const newPromptData: PromptData = {
-        text: libraryItem.text,
+        text: libraryItem.english, // 使用英文作为text字段
         chinese: libraryItem.chinese,
         english: libraryItem.english,
         isTranslating: false // 直接使用库中的翻译，不需要翻译
@@ -531,8 +538,8 @@ export default defineComponent({
     // 从提示词库中查找匹配的提示词
     const findMatchingPrompts = (text: string) => {
       return promptLibrary.value.filter(item => {
-        const regex = new RegExp(`\\b${item.text}\\b`, 'i');
-        return regex.test(text);
+        const regex = new RegExp(`\\b${text}\\b`, 'i');
+        return regex.test(item.english) || regex.test(item.chinese);
       });
     };
     

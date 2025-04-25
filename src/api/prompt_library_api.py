@@ -11,7 +11,6 @@ import sys
 # 提示词库项目模型
 class PromptLibraryItem(BaseModel):
     id: str
-    text: str
     chinese: str
     english: str
     category: str
@@ -19,7 +18,6 @@ class PromptLibraryItem(BaseModel):
 
 # 创建提示词库项目请求
 class CreatePromptLibraryItemRequest(BaseModel):
-    text: str
     chinese: str
     english: str
     category: str
@@ -27,7 +25,6 @@ class CreatePromptLibraryItemRequest(BaseModel):
 
 # 更新提示词库项目请求
 class UpdatePromptLibraryItemRequest(BaseModel):
-    text: Optional[str] = None
     chinese: Optional[str] = None
     english: Optional[str] = None
     category: Optional[str] = None
@@ -85,7 +82,6 @@ class PromptLibraryManager:
         """添加提示词库项目"""
         new_item = {
             "id": str(uuid.uuid4()),
-            "text": item_data.text,
             "chinese": item_data.chinese,
             "english": item_data.english,
             "category": item_data.category,
@@ -93,7 +89,7 @@ class PromptLibraryManager:
         }
         
         # 检查是否已存在相同的项目
-        if any(item["text"] == item_data.text for item in self.items):
+        if any(item["chinese"] == item_data.chinese and item["english"] == item_data.english for item in self.items):
             return None
             
         self.items.append(new_item)
@@ -104,8 +100,6 @@ class PromptLibraryManager:
         """更新提示词库项目"""
         for item in self.items:
             if item["id"] == item_id:
-                if item_data.text is not None:
-                    item["text"] = item_data.text
                 if item_data.chinese is not None:
                     item["chinese"] = item_data.chinese
                 if item_data.english is not None:
@@ -150,10 +144,10 @@ def create_prompt_library_api(data_dir):
         """保存提示词到库"""
         try:
             # 验证提示词必填字段
-            if not item.text or not item.chinese or not item.english or not item.category:
+            if not item.chinese or not item.english or not item.category:
                 return JSONResponse(
                     status_code=400,
-                    content={"detail": "提示词、中英文翻译和分类不能为空"}
+                    content={"detail": "中英文翻译和分类不能为空"}
                 )
                 
             new_item = library_manager.add_item(item)

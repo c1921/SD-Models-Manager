@@ -8,7 +8,7 @@
         </label>
         <input 
           type="text" 
-          v-model="newPrompt.text" 
+          v-model="newPrompt.inputText" 
           class="input input-bordered w-full" 
           placeholder="输入原始提示词文本"
         />
@@ -128,13 +128,13 @@ import { PromptsAPI } from '../api/prompts';
 import type { PromptLibraryItem, CreatePromptLibraryItemParams } from '../api/prompts';
 import { useDebounce } from '../utils/debounce';
 
-// 新提示词数据结构
+// 提示词数据结构
 interface NewPromptData {
-  text: string;         // 提示词文本
-  translated: string;   // 翻译结果
-  category: string;     // 一级分类
-  subCategory: string;  // 二级分类
-  isEnglish: boolean;   // 是否为英文
+  inputText: string;   // 输入文本
+  translated: string;  // 翻译结果
+  category: string;    // 一级分类
+  subCategory: string; // 二级分类
+  isEnglish: boolean;  // 是否为英文
 }
 
 // 简单的中英文映射字典
@@ -213,7 +213,7 @@ export default defineComponent({
     
     // 新提示词数据
     const newPrompt = ref<NewPromptData>({
-      text: '',
+      inputText: '',
       translated: '',
       category: '',
       subCategory: '',
@@ -259,7 +259,7 @@ export default defineComponent({
     // 是否可以保存到提示词库
     const canSaveToLibrary = computed(() => {
       return (
-        newPrompt.value.text.trim() !== '' && 
+        newPrompt.value.inputText.trim() !== '' && 
         newPrompt.value.translated.trim() !== '' &&
         newPrompt.value.category.trim() !== '' &&
         !isSaving.value
@@ -269,7 +269,7 @@ export default defineComponent({
     // 重置新提示词表单
     const resetNewPromptForm = () => {
       newPrompt.value = {
-        text: '',
+        inputText: '',
         translated: '',
         category: '',
         subCategory: '',
@@ -328,7 +328,7 @@ export default defineComponent({
     
     // 实际执行翻译的方法
     async function watchNewPromptText() {
-      const text = newPrompt.value.text.trim();
+      const text = newPrompt.value.inputText.trim();
       if (!text) return;
       
       // 检测是否为英文
@@ -345,9 +345,12 @@ export default defineComponent({
       }
       
       // 检查是否已存在于提示词库中
-      const existingPrompt = props.promptLibraryData.find(p => p.text === text);
+      const existingPrompt = props.promptLibraryData.find(p => 
+        (p.english === text && newPrompt.value.isEnglish) || 
+        (p.chinese === text && !newPrompt.value.isEnglish)
+      );
       if (existingPrompt) {
-        newPrompt.value.translated = isEnglish ? existingPrompt.chinese : existingPrompt.english;
+        newPrompt.value.translated = newPrompt.value.isEnglish ? existingPrompt.chinese : existingPrompt.english;
         return;
       }
       
@@ -377,11 +380,11 @@ export default defineComponent({
     watch(() => props.selectedPrompt, (selected) => {
       if (selected) {
         // 判断是否为英文
-        const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(selected.text);
+        const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(selected.english);
         
         // 如果有选中的提示词，填充到表单
         newPrompt.value = {
-          text: selected.text,
+          inputText: isEnglish ? selected.english : selected.chinese,
           translated: isEnglish ? selected.chinese : selected.english,
           category: selected.category,
           subCategory: selected.subCategory,
@@ -399,9 +402,8 @@ export default defineComponent({
         errorMessage.value = '';
         
         const newItem: CreatePromptLibraryItemParams = {
-          text: newPrompt.value.text.trim(),
-          chinese: newPrompt.value.isEnglish ? newPrompt.value.translated : newPrompt.value.text,
-          english: newPrompt.value.isEnglish ? newPrompt.value.text : newPrompt.value.translated,
+          chinese: newPrompt.value.isEnglish ? newPrompt.value.translated : newPrompt.value.inputText,
+          english: newPrompt.value.isEnglish ? newPrompt.value.inputText : newPrompt.value.translated,
           category: newPrompt.value.category,
           subCategory: newPrompt.value.subCategory || '默认' // 未选择时使用默认分类
         };
@@ -433,8 +435,8 @@ export default defineComponent({
     // 组件挂载后初始化
     onMounted(() => {
       // 监听新提示词文本变化
-      watch(() => newPrompt.value.text, () => {
-        if (newPrompt.value.text.trim()) {
+      watch(() => newPrompt.value.inputText, () => {
+        if (newPrompt.value.inputText.trim()) {
           translateDebounce.triggerDebounce();
         }
       });
