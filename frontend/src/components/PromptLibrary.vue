@@ -5,7 +5,7 @@
       <div class="flex justify-between items-center mb-2">
         <label class="block text-sm font-medium">提示词库</label>
       </div>
-      <div class="flex flex-wrap gap-2 bg-base-200 p-3 rounded-md">
+      <div class="bg-base-200 p-3 rounded-md">
         <!-- 加载状态 -->
         <div v-if="isLoading" class="text-center text-base-content/50 py-6 w-full flex justify-center items-center">
           <i class="icon-[tabler--loader-2] animate-spin mr-2"></i> 正在加载提示词库...
@@ -22,46 +22,69 @@
         </div>
         
         <!-- 提示词列表 -->
-        <div v-else class="flex flex-wrap gap-2 w-full">
+        <div v-else class="w-full">
           <!-- 分类选择 -->
-          <div class="w-full mb-2 flex gap-2 flex-wrap">
-            <div class="dropdown">
-              <label tabindex="0" class="btn btn-sm">
-                {{ selectedCategory || '选择一级分类' }}
-                <i class="icon-[tabler--chevron-down]"></i>
-              </label>
-              <ul tabindex="0" class="dropdown-content z-[1] menu shadow bg-base-100 rounded-box w-52">
-                <li><a @click="selectedCategory = ''">全部</a></li>
-                <li v-for="category in categories" :key="category">
-                  <a @click="selectedCategory = category">{{ category }}</a>
-                </li>
-              </ul>
+          <div class="mb-4">
+            <div class="tabs tabs-bordered">
+              <!-- 全部分类选项 -->
+              <button 
+                class="tab" 
+                :class="{'tab-active': selectedCategory === ''}"
+                @click="selectedCategory = ''"
+              >
+                全部
+              </button>
+              
+              <!-- 一级分类选项 -->
+              <button 
+                v-for="category in categories" 
+                :key="category"
+                class="tab" 
+                :class="{'tab-active': selectedCategory === category}"
+                @click="selectedCategory = category"
+              >
+                {{ category }}
+              </button>
             </div>
             
-            <div class="dropdown" v-if="selectedCategory">
-              <label tabindex="0" class="btn btn-sm">
-                {{ selectedSubCategory || '选择二级分类' }}
-                <i class="icon-[tabler--chevron-down]"></i>
-              </label>
-              <ul tabindex="0" class="dropdown-content z-[1] menu shadow bg-base-100 rounded-box w-52">
-                <li><a @click="selectedSubCategory = ''">全部</a></li>
-                <li v-for="subCategory in subCategories" :key="subCategory">
-                  <a @click="selectedSubCategory = subCategory">{{ subCategory }}</a>
-                </li>
-              </ul>
+            <!-- 二级分类选择 -->
+            <div v-if="selectedCategory && subCategories.length > 0" class="mt-2">
+              <div class="badge-group flex flex-wrap gap-2 mt-2">
+                <!-- 全部二级分类选项 -->
+                <button 
+                  class="badge badge-outline" 
+                  :class="{'badge-primary': selectedSubCategory === ''}"
+                  @click="selectedSubCategory = ''"
+                >
+                  全部
+                </button>
+                
+                <!-- 二级分类选项 -->
+                <button 
+                  v-for="subCategory in subCategories" 
+                  :key="subCategory"
+                  class="badge badge-outline" 
+                  :class="{'badge-primary': selectedSubCategory === subCategory}"
+                  @click="selectedSubCategory = subCategory"
+                >
+                  {{ subCategory }}
+                </button>
+              </div>
             </div>
           </div>
           
           <!-- 提示词列表 -->
-          <button 
-            v-for="(prompt, index) in promptLibraryFiltered" 
-            :key="'lib-prompt-' + index"
-            class="badge badge-lg badge-secondary h-auto cursor-pointer"
-            @click="selectPrompt(prompt)"
-          >
-            <div class="text-sm">{{ prompt.chinese }}</div>
-            <div class="text-xs opacity-80">{{ prompt.english }}</div>
-          </button>
+          <div class="flex flex-wrap gap-2">
+            <button 
+              v-for="(prompt, index) in promptLibraryFiltered" 
+              :key="'lib-prompt-' + index"
+              class="badge badge-lg badge-secondary h-auto cursor-pointer"
+              @click="selectPrompt(prompt)"
+            >
+              <div class="text-sm">{{ prompt.chinese }}</div>
+              <div class="text-xs opacity-80">{{ prompt.english }}</div>
+            </button>
+          </div>
         </div>
       </div>
     </div>
