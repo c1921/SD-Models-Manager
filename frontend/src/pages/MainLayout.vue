@@ -215,7 +215,7 @@ onMounted(async () => {
     appVersion.value = versionInfo.version;
   } catch (e) {
     console.error('获取版本信息失败', e);
-    appVersion.value = '0.5.1'; // 默认版本号
+    appVersion.value = ''; // 不显示默认版本号
   }
   
   // 加载模型目录
