@@ -157,8 +157,7 @@ const route = useRoute();
 const isModelPage = computed(() => route.path.startsWith('/models'));
 const isPromptPage = computed(() => route.path.startsWith('/prompts'));
 
-// 移动端菜单状态
-const mobileMenuOpen = ref(false);
+// 主题状态
 const darkMode = ref(false);
 
 // 设置相关状态
@@ -227,7 +226,3 @@ onMounted(async () => {
   }
 });
 </script>
-
-<style>
-/* 不再需要自定义抽屉样式，使用FlyonUI标准抽屉组件 */
-</style> 
