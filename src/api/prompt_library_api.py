@@ -6,6 +6,7 @@ import uuid
 import os
 import json
 from datetime import datetime
+import sys
 
 # 提示词库项目模型
 class PromptLibraryItem(BaseModel):
@@ -36,7 +37,15 @@ class UpdatePromptLibraryItemRequest(BaseModel):
 class PromptLibraryManager:
     def __init__(self, data_dir):
         self.data_dir = data_dir
-        self.library_file = os.path.join(data_dir, "prompt_library.json")
+        
+        # 检查是否是PyInstaller打包环境
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            # 在打包环境中，使用应用程序所在目录下的data目录
+            app_dir = os.path.dirname(sys.executable)
+            self.data_dir = os.path.join(app_dir, "data")
+            print(f"检测到打包环境，设置数据目录为: {self.data_dir}")
+        
+        self.library_file = os.path.join(self.data_dir, "prompt_library.json")
         self.items = []
         self.load_library()
 
@@ -49,7 +58,7 @@ class PromptLibraryManager:
                 print(f"已加载提示词库，共{len(self.items)}个项目")
             else:
                 self.items = []
-                print("提示词库文件不存在，已初始化空库")
+                print(f"提示词库文件不存在，已初始化空库 (路径: {self.library_file})")
         except Exception as e:
             print(f"加载提示词库失败: {str(e)}")
             self.items = []

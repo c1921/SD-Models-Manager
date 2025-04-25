@@ -66,6 +66,10 @@ jobs:
         New-Item -ItemType Directory -Path "$VERSION"
         Move-Item "SD_Models_Manager_v*.exe" "$VERSION"
         
+        # 创建data目录
+        New-Item -ItemType Directory -Path "$VERSION\data"
+        Write-Host "Created data directory for storing prompt library"
+        
         # 只在 frontend 目录存在时才移动它
         if (Test-Path -Path "frontend") {
           Move-Item "frontend" "$VERSION"
@@ -76,6 +80,12 @@ jobs:
         if (Test-Path -Path "static") {
           Move-Item "static" "$VERSION"
           Write-Host "Moved static directory to package"
+        }
+        
+        # 只在 data 目录存在时才移动它
+        if (Test-Path -Path "data") {
+          Move-Item "data" "$VERSION"
+          Write-Host "Moved data directory to package"
         }
         
         # 确保目录结构完整

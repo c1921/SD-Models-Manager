@@ -158,6 +158,9 @@ def build_executable():
         # 设置环境变量以确保正确的编码
         os.environ['PYTHONIOENCODING'] = 'utf-8'
         
+        # 确保data目录存在
+        os.makedirs('data', exist_ok=True)
+        
         # 构建前端
         if not build_frontend():
             print("警告: 前端构建失败，将只包含API部分")
@@ -179,6 +182,10 @@ def build_executable():
         # 添加静态文件
         if os.path.exists('static'):
             pyinstaller_args.append('--add-data=static;static')
+        
+        # 添加data目录
+        if os.path.exists('data'):
+            pyinstaller_args.append('--add-data=data;data')
         
         # 添加前端构建
         if os.path.exists('dist/frontend'):
