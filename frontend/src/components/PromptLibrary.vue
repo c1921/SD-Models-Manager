@@ -30,7 +30,7 @@
               <button 
                 class="tab" 
                 :class="{'tab-active': selectedCategory === ''}"
-                @click="selectedCategory = ''"
+                @click="selectCategory('')"
               >
                 全部
               </button>
@@ -41,7 +41,7 @@
                 :key="category"
                 class="tab" 
                 :class="{'tab-active': selectedCategory === category}"
-                @click="selectedCategory = category"
+                @click="selectCategory(category)"
               >
                 {{ category }}
               </button>
@@ -122,6 +122,12 @@ export default defineComponent({
       promptLibrary.value = newData;
     }, { deep: true, immediate: true });
     
+    // 监听一级分类变化，当一级分类变化时重置二级分类选择
+    watch(selectedCategory, () => {
+      // 重置二级分类
+      selectedSubCategory.value = '';
+    });
+    
     // 一级分类列表
     const categories = computed(() => {
       const categorySet = new Set(promptLibrary.value.map(item => item.category));
@@ -161,6 +167,17 @@ export default defineComponent({
       emit('select-prompt', prompt);
     };
     
+    // 选择一级分类
+    const selectCategory = (category: string) => {
+      // 如果选择相同的分类，不做处理
+      if (selectedCategory.value === category) return;
+      
+      // 更新选择的一级分类
+      selectedCategory.value = category;
+      // 重置二级分类选择
+      selectedSubCategory.value = '';
+    };
+    
     // 加载提示词库
     const loadPromptLibrary = async () => {
       try {
@@ -192,6 +209,7 @@ export default defineComponent({
       categories,
       subCategories,
       selectPrompt,
+      selectCategory,
       isLoading,
       errorMessage,
     };
