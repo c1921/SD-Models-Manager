@@ -46,7 +46,14 @@
         </div>
         <div class="mt-2" v-if="showAddCategory">
           <div class="flex gap-2">
-            <input type="text" v-model="newCategory" class="input input-bordered flex-grow" placeholder="新分类名称" />
+            <input 
+              type="text" 
+              v-model="newCategory" 
+              ref="categoryInput"
+              class="input input-bordered flex-grow" 
+              placeholder="新分类名称"
+              @keyup.enter="addNewCategory"
+            />
             <button class="btn btn-primary" @click="addNewCategory">
               <i class="icon-[tabler--check]"></i>
             </button>
@@ -73,7 +80,14 @@
         </div>
         <div class="mt-2" v-if="showAddSubCategory">
           <div class="flex gap-2">
-            <input type="text" v-model="newSubCategory" class="input input-bordered flex-grow" placeholder="新二级分类名称" />
+            <input 
+              type="text" 
+              v-model="newSubCategory" 
+              ref="subCategoryInput"
+              class="input input-bordered flex-grow" 
+              placeholder="新二级分类名称"
+              @keyup.enter="addNewSubCategory"
+            />
             <button class="btn btn-primary" @click="addNewSubCategory">
               <i class="icon-[tabler--check]"></i>
             </button>
@@ -161,6 +175,30 @@ export default defineComponent({
     const newSubCategory = ref('');
     const isSaving = ref(false);
     const errorMessage = ref('');
+    
+    // 输入框引用
+    const categoryInput = ref<HTMLInputElement | null>(null);
+    const subCategoryInput = ref<HTMLInputElement | null>(null);
+    
+    // 监听分类添加状态，自动聚焦
+    watch(showAddCategory, (newVal) => {
+      if (newVal) {
+        // 等待DOM更新后聚焦
+        setTimeout(() => {
+          categoryInput.value?.focus();
+        }, 50);
+      }
+    });
+    
+    // 监听二级分类添加状态，自动聚焦
+    watch(showAddSubCategory, (newVal) => {
+      if (newVal) {
+        // 等待DOM更新后聚焦
+        setTimeout(() => {
+          subCategoryInput.value?.focus();
+        }, 50);
+      }
+    });
     
     // 本地分类管理
     const localCategories = ref<string[]>([]);
@@ -407,6 +445,8 @@ export default defineComponent({
       errorMessage,
       localCategories,
       localSubCategories,
+      categoryInput,
+      subCategoryInput,
       
       // 方法
       addNewCategory,
