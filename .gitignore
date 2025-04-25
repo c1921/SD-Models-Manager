@@ -74,3 +74,5 @@ static/images/
 version_info.txt
 
 data/
+
+update_version.py
