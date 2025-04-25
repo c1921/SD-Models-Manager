@@ -81,9 +81,11 @@
 <script lang="ts">
 import { defineComponent, ref, onMounted, nextTick, computed, onBeforeUnmount, watch } from 'vue';
 import Sortable from 'sortablejs';
+// @ts-ignore
 import { PromptsAPI } from '../api/prompts'; // 导入API
 import type { PromptLibraryItem } from '../api/prompts'; // 从API文件导入类型
 import PromptLibrary from './PromptLibrary.vue'; // 导入提示词库组件
+import { useDebounce } from '../utils/debounce'; // 导入防抖工具
 
 // 提示词数据结构
 interface PromptData {
@@ -156,10 +158,18 @@ export default defineComponent({
     let isUpdatingFromTextarea = false; // 标记是否从文本框更新，避免循环
     const rawInputValue = ref(''); // 保存原始输入值，解决末尾逗号问题
     const isTranslating = ref(false); // 全局翻译状态
-    let translateTimer: number | null = null; // 翻译防抖定时器
     
     // 提示词库数据
     const promptLibrary = ref<PromptLibraryItem[]>(props.promptLibraryData);
+    
+    // 创建批量翻译的防抖函数
+    const translateDebounce = useDebounce(async () => {
+      console.log('[触发防抖翻译]');
+      const needTranslation = prompts.value.filter(p => p.isTranslating);
+      if (needTranslation.length > 0) {
+        await batchTranslatePrompts(prompts.value);
+      }
+    }, 1000);
     
     // 监听提示词库数据变化
     watch(() => props.promptLibraryData, (newData) => {
@@ -260,20 +270,7 @@ export default defineComponent({
     
     // 防抖翻译函数
     const debounceTranslate = () => {
-      // 清除之前的定时器
-      if (translateTimer !== null) {
-        clearTimeout(translateTimer);
-      }
-      
-      // 设置新的定时器
-      translateTimer = window.setTimeout(() => {
-        console.log('[触发防抖翻译]');
-        const needTranslation = prompts.value.filter(p => p.isTranslating);
-        if (needTranslation.length > 0) {
-          batchTranslatePrompts(prompts.value);
-        }
-        translateTimer = null;
-      }, 1000); // 1秒防抖延迟
+      translateDebounce.triggerDebounce();
     };
     
     // 创建提示词对象
@@ -551,10 +548,7 @@ export default defineComponent({
     
     // 组件卸载前清除定时器
     onBeforeUnmount(() => {
-      if (translateTimer !== null) {
-        clearTimeout(translateTimer);
-        translateTimer = null;
-      }
+      translateDebounce.cancel();
     });
     
     return {
@@ -565,7 +559,7 @@ export default defineComponent({
       clearAll,
       isTranslating,
       handleCommaPress,
-      translateTimer,
+      translateTimer: translateDebounce.isActive,
       addPromptFromLibrary,
       findMatchingPrompts
     };

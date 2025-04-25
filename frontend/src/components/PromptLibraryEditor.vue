@@ -21,6 +21,9 @@
           <span class="text-xs" v-if="isLibTranslating">
             <i class="icon-[tabler--loader-2] animate-spin mr-1"></i> 翻译中...
           </span>
+          <span class="text-xs text-primary" v-if="translateDebounceActive">
+            <i class="icon-[tabler--clock] animate-pulse mr-1"></i> 准备翻译...
+          </span>
         </label>
         <input 
           type="text" 
@@ -120,9 +123,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted, watch } from 'vue';
+import { defineComponent, ref, computed, onMounted, watch, onBeforeUnmount } from 'vue';
 import { PromptsAPI } from '../api/prompts';
 import type { PromptLibraryItem, CreatePromptLibraryItemParams } from '../api/prompts';
+import { useDebounce } from '../utils/debounce';
 
 // 新提示词数据结构
 interface NewPromptData {
@@ -175,6 +179,9 @@ export default defineComponent({
     const newSubCategory = ref('');
     const isSaving = ref(false);
     const errorMessage = ref('');
+    
+    // 使用防抖工具
+    const translateDebounce = useDebounce(watchNewPromptText, 800);
     
     // 输入框引用
     const categoryInput = ref<HTMLInputElement | null>(null);
@@ -319,8 +326,8 @@ export default defineComponent({
       newSubCategory.value = '';
     };
     
-    // 监听新提示词文本变化，自动翻译
-    const watchNewPromptText = async () => {
+    // 实际执行翻译的方法
+    async function watchNewPromptText() {
       const text = newPrompt.value.text.trim();
       if (!text) return;
       
@@ -347,6 +354,8 @@ export default defineComponent({
       // 调用API翻译
       try {
         isLibTranslating.value = true;
+        console.log(`[开始翻译] 文本: "${text}", 方向: ${!isEnglish ? '中->英' : '英->中'}`);
+        
         const result = await PromptsAPI.translateText(
           text,
           !isEnglish // 中文->英文 或 英文->中文
@@ -354,6 +363,7 @@ export default defineComponent({
         
         if (result && result.translated) {
           newPrompt.value.translated = result.translated;
+          console.log(`[翻译成功] 结果: "${result.translated}"`);
         }
       } catch (error) {
         console.error('翻译失败:', error);
@@ -361,7 +371,7 @@ export default defineComponent({
       } finally {
         isLibTranslating.value = false;
       }
-    };
+    }
     
     // 监听选中的提示词变化
     watch(() => props.selectedPrompt, (selected) => {
@@ -425,9 +435,14 @@ export default defineComponent({
       // 监听新提示词文本变化
       watch(() => newPrompt.value.text, () => {
         if (newPrompt.value.text.trim()) {
-          watchNewPromptText();
+          translateDebounce.triggerDebounce();
         }
       });
+    });
+    
+    // 组件卸载前清除防抖
+    onBeforeUnmount(() => {
+      translateDebounce.cancel();
     });
     
     return {
@@ -447,6 +462,7 @@ export default defineComponent({
       localSubCategories,
       categoryInput,
       subCategoryInput,
+      translateDebounceActive: translateDebounce.isActive,
       
       // 方法
       addNewCategory,
