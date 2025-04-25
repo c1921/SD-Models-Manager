@@ -66,7 +66,10 @@
             type="button"
             class="btn btn-icon btn-outline md:hidden"
             title="菜单"
-            @click="toggleMobileMenu"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="mobile-drawer"
+            data-overlay="#mobile-drawer"
           >
             <span class="icon-[tabler--menu] size-5"></span>
           </button>
@@ -74,16 +77,25 @@
       </div>
     </header>
     
-    <!-- 移动端导航抽屉 -->
+    <!-- 移动端导航抽屉 (使用Flyonui的drawer组件) -->
     <div 
-      class="drawer-side z-20 md:hidden" 
-      :class="{ 'drawer-open': mobileMenuOpen }"
+      id="mobile-drawer" 
+      class="overlay overlay-open:translate-x-0 drawer drawer-start hidden md:hidden" 
+      role="dialog" 
+      tabindex="-1"
     >
-      <label 
-        class="drawer-overlay" 
-        @click="mobileMenuOpen = false"
-      ></label>
-      <div class="p-4 w-60 min-h-full bg-base-200 text-base-content">
+      <div class="drawer-header">
+        <h3 class="drawer-title">导航菜单</h3>
+        <button 
+          type="button" 
+          class="btn btn-text btn-circle btn-sm absolute end-3 top-3" 
+          aria-label="关闭" 
+          data-overlay="#mobile-drawer"
+        >
+          <span class="icon-[tabler--x] size-5"></span>
+        </button>
+      </div>
+      <div class="drawer-body">
         <div class="flex flex-col gap-2">
           <router-link 
             to="/models" 
@@ -91,7 +103,7 @@
             :class="[
               isModelPage ? 'btn-primary' : 'btn-ghost'
             ]"
-            @click="mobileMenuOpen = false"
+            data-overlay="#mobile-drawer"
           >
             <span class="icon-[tabler--database] inline-block me-1.5 size-5"></span>
             模型管理
@@ -102,13 +114,16 @@
             :class="[
               isPromptPage ? 'btn-primary' : 'btn-ghost'
             ]"
-            @click="mobileMenuOpen = false"
+            data-overlay="#mobile-drawer"
           >
             <span class="icon-[tabler--message-circle] inline-block me-1.5 size-5"></span>
             提示词管理
           </router-link>
           <!-- 这里可以添加更多导航项 -->
         </div>
+      </div>
+      <div class="drawer-footer">
+        <button type="button" class="btn btn-soft btn-secondary" data-overlay="#mobile-drawer">关闭</button>
       </div>
     </div>
     
@@ -150,11 +165,6 @@ const darkMode = ref(false);
 const appVersion = ref('');
 const modelPath = ref('');
 const settingsModalRef = ref<InstanceType<typeof SettingsModal> | null>(null);
-
-// 切换移动端菜单
-function toggleMobileMenu() {
-  mobileMenuOpen.value = !mobileMenuOpen.value;
-}
 
 // 切换暗色模式
 function toggleDarkMode() {
@@ -219,26 +229,5 @@ onMounted(async () => {
 </script>
 
 <style>
-.drawer-side {
-  position: fixed;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  transition: left 0.3s ease;
-}
-
-.drawer-side.drawer-open {
-  left: 0;
-}
-
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: -1;
-}
+/* 不再需要自定义抽屉样式，使用FlyonUI标准抽屉组件 */
 </style> 

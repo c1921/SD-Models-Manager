@@ -13,6 +13,17 @@
       <div class="flex flex-wrap items-center justify-between gap-2">
         <h1 class="text-xl font-semibold">模型管理</h1>
         <div class="flex gap-2">
+          <!-- 新增移动端筛选按钮，仅在非大屏显示 -->
+          <button 
+            type="button"
+            class="btn btn-outline btn-sm md:btn-md lg:hidden"
+            title="筛选器"
+            @click="openFilterSidebar"
+          >
+            <span class="icon-[tabler--filter] size-5"></span>
+            <span class="hidden md:inline ml-2">筛选</span>
+          </button>
+
           <button 
             type="button"
             :class="[
@@ -199,8 +210,6 @@ function toggleBlurNsfw() {
   localStorage.setItem('blurNsfw', String(blurNsfw.value));
 }
 
-
-
 const scanModels = async () => {
   try {
     // 清除可能的上一个轮询间隔
@@ -338,4 +347,11 @@ onUnmounted(() => {
     scanInterval = null;
   }
 });
+
+// 打开筛选器侧边栏
+function openFilterSidebar() {
+  if (filterSidebarRef.value) {
+    filterSidebarRef.value.openFilterSidebar();
+  }
+}
 </script> 
