@@ -137,23 +137,6 @@ interface NewPromptData {
   isEnglish: boolean;  // 是否为英文
 }
 
-// 简单的中英文映射字典
-const translationMap: Record<string, string> = {
-  '写实风格': 'realistic style',
-  '动漫风格': 'anime style',
-  '水彩画': 'watercolor',
-  '油画': 'oil painting',
-  '素描': 'sketch',
-  '赛博朋克': 'cyberpunk',
-  '未来主义': 'futurism',
-  '极简主义': 'minimalism',
-  '高清': 'high resolution',
-  '高质量': 'high quality',
-  '细节丰富': 'detailed',
-  '精细': 'fine detail',
-  // ... 可以保留更多映射
-};
-
 export default defineComponent({
   name: 'PromptLibraryEditor',
   
@@ -334,15 +317,6 @@ export default defineComponent({
       // 检测是否为英文
       const isEnglish = /^[a-zA-Z0-9\s\-_,.]+$/.test(text);
       newPrompt.value.isEnglish = isEnglish;
-      
-      // 检查本地翻译字典
-      if (isEnglish && translationMap[text]) {
-        newPrompt.value.translated = translationMap[text];
-        return;
-      } else if (!isEnglish && translationMap[text]) {
-        newPrompt.value.translated = translationMap[text];
-        return;
-      }
       
       // 检查是否已存在于提示词库中
       const existingPrompt = props.promptLibraryData.find(p => 

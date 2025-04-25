@@ -95,47 +95,6 @@ interface PromptData {
   isTranslating?: boolean; // 是否正在翻译
 }
 
-// 简单的中英文映射字典
-const translationMap: Record<string, string> = {
-  '写实风格': 'realistic style',
-  '动漫风格': 'anime style',
-  '水彩画': 'watercolor',
-  '油画': 'oil painting',
-  '素描': 'sketch',
-  '赛博朋克': 'cyberpunk',
-  '未来主义': 'futurism',
-  '极简主义': 'minimalism',
-  '高清': 'high resolution',
-  '高质量': 'high quality',
-  '细节丰富': 'detailed',
-  '精细': 'fine detail',
-  '夜景': 'night scene',
-  '黎明': 'dawn',
-  '黄昏': 'dusk',
-  '雨天': 'rainy',
-  '雪景': 'snow scene',
-  '海边': 'seaside',
-  '森林': 'forest',
-  '城市': 'city',
-  '星空': 'starry sky',
-  '广角镜头': 'wide-angle lens',
-  '长焦镜头': 'telephoto lens',
-  '鱼眼镜头': 'fisheye lens',
-  '微距': 'macro',
-  '景深': 'depth of field',
-  '散景': 'bokeh',
-  '低角度': 'low angle',
-  '航拍': 'aerial photography',
-  '逆光': 'backlight',
-  '侧光': 'sidelight',
-  '柔光': 'soft light',
-  '硬光': 'hard light',
-  '聚光': 'spotlight',
-  '霓虹灯': 'neon lights',
-  '金色光芒': 'golden rays',
-  '蓝色调': 'blue tone'
-};
-
 export default defineComponent({
   name: 'PromptBadges',
   
@@ -293,15 +252,16 @@ export default defineComponent({
         isTranslating: true
       };
       
-      // 使用已有翻译
-      if (isEnglish && translationMap[text]) {
-        promptData.chinese = translationMap[text];
+      // 查找提示词库中是否已有该提示词的翻译
+      const existingPrompt = promptLibrary.value.find(p => 
+        (isEnglish && p.english === text) || (!isEnglish && p.chinese === text)
+      );
+      
+      if (existingPrompt) {
+        promptData.chinese = existingPrompt.chinese;
+        promptData.english = existingPrompt.english;
         promptData.isTranslating = false;
-        console.log(`[本地翻译] 英->中: "${text}" -> "${translationMap[text]}"`);
-      } else if (!isEnglish && translationMap[text]) {
-        promptData.english = translationMap[text];
-        promptData.isTranslating = false;
-        console.log(`[本地翻译] 中->英: "${text}" -> "${translationMap[text]}"`);
+        console.log(`[库中查找] 文本: "${text}", 找到翻译: "${isEnglish ? existingPrompt.chinese : existingPrompt.english}"`);
       } else {
         console.log(`[需要翻译] 文本: "${text}", 当前状态:`, promptData);
       }
