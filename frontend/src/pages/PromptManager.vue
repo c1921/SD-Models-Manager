@@ -7,23 +7,13 @@
           <button 
             type="button" 
             class="tab active-tab:tab-active active" 
-            id="tab-translator" 
-            data-tab="#translator-panel" 
-            aria-controls="translator-panel" 
-            role="tab" 
-            aria-selected="true"
-          >
-            快速翻译
-          </button>
-          <button 
-            type="button" 
-            class="tab active-tab:tab-active" 
             id="tab-badges" 
             data-tab="#badges-panel" 
             aria-controls="badges-panel" 
             role="tab" 
-            aria-selected="false"
+            aria-selected="true"
           >
+            <span class="icon-[tabler--reorder] inline-block me-1.5 size-5"></span>
             提示词拆分
           </button>
           <button 
@@ -35,19 +25,27 @@
             role="tab" 
             aria-selected="false"
           >
+            <span class="icon-[tabler--edit] inline-block me-1.5 size-5"></span>
             提示词库编辑
+          </button>
+          <button 
+            type="button" 
+            class="tab active-tab:tab-active" 
+            id="tab-translator" 
+            data-tab="#translator-panel" 
+            aria-controls="translator-panel" 
+            role="tab" 
+            aria-selected="false"
+          >
+            <span class="icon-[tabler--language] inline-block me-1.5 size-5"></span>
+            快速翻译
           </button>
         </nav>
         
         <!-- Tabs 内容 -->
         <div class="mt-4">
-          <!-- 快速翻译面板 -->
-          <div id="translator-panel" role="tabpanel" aria-labelledby="tab-translator">
-            <QuickTranslator />
-          </div>
-          
           <!-- 提示词拆分面板 -->
-          <div id="badges-panel" class="hidden" role="tabpanel" aria-labelledby="tab-badges">
+          <div id="badges-panel" role="tabpanel" aria-labelledby="tab-badges">
             <PromptBadges 
               :promptLibraryData="promptLibrary"
               :key="promptLibraryKey"
@@ -77,6 +75,11 @@
                 />
               </div>
             </div>
+          </div>
+          
+          <!-- 快速翻译面板 -->
+          <div id="translator-panel" class="hidden" role="tabpanel" aria-labelledby="tab-translator">
+            <QuickTranslator />
           </div>
         </div>
       </div>

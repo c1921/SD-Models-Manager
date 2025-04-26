@@ -30,7 +30,7 @@
                     isPromptPage ? 'btn-primary' : 'btn-ghost'
                   ]"
                 >
-                  <span class="icon-[tabler--message-circle] inline-block me-1.5 size-5"></span>
+                  <span class="icon-[tabler--square-letter-p] inline-block me-1.5 size-5"></span>
                   提示词管理
                 </router-link>
               </li>
@@ -71,7 +71,7 @@
             aria-controls="mobile-drawer"
             data-overlay="#mobile-drawer"
           >
-            <span class="icon-[tabler--menu] size-5"></span>
+            <span class="icon-[tabler--menu-2] size-5"></span>
           </button>
         </div>
       </div>
@@ -116,7 +116,7 @@
             ]"
             data-overlay="#mobile-drawer"
           >
-            <span class="icon-[tabler--message-circle] inline-block me-1.5 size-5"></span>
+            <span class="icon-[tabler--square-letter-p] inline-block me-1.5 size-5"></span>
             提示词管理
           </router-link>
           <!-- 这里可以添加更多导航项 -->
