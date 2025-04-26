@@ -40,26 +40,13 @@
         </div>
         
         <div class="flex items-center gap-2">
-          <!-- ComfyUI状态指示器 -->
-          <div 
-            class="flex items-center gap-1.5 px-2 py-1 rounded-md text-sm"
-            :class="{
-              'bg-success/20 text-success': comfyUIStatus === 'running',
-              'bg-error/20 text-error': comfyUIStatus === 'stopped',
-              'bg-warning/20 text-warning': comfyUIStatus === 'unknown'
-            }"
-            :title="comfyUIMessage"
-          >
-            <div 
-              class="w-2 h-2 rounded-full"
-              :class="{
-                'bg-success animate-pulse': comfyUIStatus === 'running',
-                'bg-error': comfyUIStatus === 'stopped',
-                'bg-warning': comfyUIStatus === 'unknown'
-              }"
-            ></div>
-            <span>ComfyUI</span>
-          </div>
+          <!-- 使用独立的ComfyUI状态指示器组件，开启自动检查功能 -->
+          <ComfyUIStatus
+            v-model:status="comfyUIStatus"
+            v-model:message="comfyUIMessage"
+            :auto-check="true"
+            :check-interval="10000"
+          />
           
           <!-- 设置按钮 -->
           <button 
@@ -165,9 +152,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import SettingsModal from '../components/SettingsModal.vue';
+import ComfyUIStatus from '../components/ComfyUIStatus.vue';
 import { ModelsAPI } from '../api/models';
 
 // 使用Vue Router的API获取当前路由信息
@@ -186,23 +174,9 @@ const appVersion = ref('');
 const modelPath = ref('');
 const settingsModalRef = ref<InstanceType<typeof SettingsModal> | null>(null);
 
-// ComfyUI状态
+// ComfyUI状态 - 初始化为unknown，将由组件负责更新
 const comfyUIStatus = ref<'running' | 'stopped' | 'unknown'>('unknown');
 const comfyUIMessage = ref('正在检查ComfyUI状态...');
-let comfyUIStatusInterval: number | null = null;
-
-// 检查ComfyUI状态
-async function checkComfyUIStatus() {
-  try {
-    const result = await ModelsAPI.checkComfyUIStatus();
-    comfyUIStatus.value = result.status;
-    comfyUIMessage.value = result.message;
-  } catch (e) {
-    console.error('获取ComfyUI状态失败', e);
-    comfyUIStatus.value = 'unknown';
-    comfyUIMessage.value = '无法获取ComfyUI状态';
-  }
-}
 
 // 切换暗色模式
 function toggleDarkMode() {
@@ -262,19 +236,6 @@ onMounted(async () => {
     modelPath.value = await ModelsAPI.getModelPath();
   } catch (e) {
     console.error('获取模型目录失败', e);
-  }
-  
-  // 立即检查一次ComfyUI状态
-  await checkComfyUIStatus();
-  
-  // 设置定时检查ComfyUI状态（每10秒检查一次）
-  comfyUIStatusInterval = window.setInterval(checkComfyUIStatus, 10000);
-});
-
-// 组件卸载时清除定时器
-onUnmounted(() => {
-  if (comfyUIStatusInterval) {
-    clearInterval(comfyUIStatusInterval);
   }
 });
 </script>
