@@ -1,10 +1,5 @@
 <template>
-  <div class="card bg-base-100 shadow-md mb-6">
     <div class="card-body p-4">
-      <h3 class="card-title text-lg mb-2">
-        <i class="icon-[tabler--language] mr-2"></i>
-        快速翻译
-      </h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="form-control">
           <div class="flex items-center mb-1">
@@ -63,7 +58,6 @@
         </button>
       </div>
     </div>
-  </div>
 </template>
 
 <script lang="ts">

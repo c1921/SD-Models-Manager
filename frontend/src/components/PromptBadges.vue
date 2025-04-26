@@ -41,7 +41,7 @@
           <div 
             v-for="(prompt, index) in prompts" 
             :key="'prompt-' + index + '-' + prompt.text"
-            class="badge badge-lg badge-primary flex items-center gap-2 px-3 py-2 cursor-move min-w-24 h-auto"
+            class="badge badge-lg badge-secondary flex items-center gap-2 px-3 py-2 cursor-move min-w-24 h-auto"
             :class="{ 'opacity-70': prompt.isTranslating }"
             :data-id="index"
           >
@@ -56,7 +56,7 @@
               </div>
             </div>
             <button 
-              class="btn btn-ghost btn-xs btn-circle flex-shrink-0"
+              class="btn btn-secondary btn-soft btn-xs btn-circle opacity-30 hover:opacity-100 flex-shrink-0"
               @click.stop="removePrompt(index)"
             >
               <i class="icon-[tabler--x] size-3"></i>

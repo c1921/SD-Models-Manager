@@ -1,6 +1,5 @@
 <template>
   <div class="prompt-manager-container p-5">
-    <div class="card bg-base-100 shadow-md">
       <div class="card-body p-3 sm:p-5">
         <!-- Tabs 导航 -->
         <nav class="tabs tabs-bordered w-full" aria-label="提示词工具" role="tablist" aria-orientation="horizontal">
@@ -86,7 +85,6 @@
           </div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 
