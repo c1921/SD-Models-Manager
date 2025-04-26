@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ModelManager from '../pages/ModelManager.vue'
 import PromptManager from '../pages/PromptManager.vue'
+import ColorDemo from '../pages/ColorDemo.vue'
 
 // 定义路由配置
 const routes = [
@@ -22,6 +23,14 @@ const routes = [
     component: PromptManager,
     meta: {
       title: '提示词管理'
+    }
+  },
+  {
+    path: '/colors',
+    name: 'ColorDemo',
+    component: ColorDemo,
+    meta: {
+      title: 'FlyonUI 颜色系统示例'
     }
   }
 ]
