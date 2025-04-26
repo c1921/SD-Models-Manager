@@ -1,50 +1,53 @@
 <template>
   <div class="prompt-manager-container p-5">
     <div class="card bg-base-100 shadow-md">
-      <div class="card-body">
+      <div class="card-body p-3 sm:p-5">
         <!-- Tabs 导航 -->
-        <nav class="tabs tabs-bordered" aria-label="提示词工具" role="tablist" aria-orientation="horizontal">
+        <nav class="tabs tabs-bordered w-full" aria-label="提示词工具" role="tablist" aria-orientation="horizontal">
           <button 
             type="button" 
-            class="tab active-tab:tab-active active" 
+            class="tab tab-lg flex-1 active-tab:tab-active active px-2 sm:px-4" 
             id="tab-badges" 
             data-tab="#badges-panel" 
             aria-controls="badges-panel" 
             role="tab" 
             aria-selected="true"
           >
-            <span class="icon-[tabler--reorder] inline-block me-1.5 size-5"></span>
-            提示词拆分
+            <span class="icon-[tabler--reorder] inline-block size-5 sm:me-1.5"></span>
+            <span class="hidden sm:inline">提示词排序</span>
+            <span class="sm:hidden" aria-label="提示词排序"></span>
           </button>
           <button 
             type="button" 
-            class="tab active-tab:tab-active" 
+            class="tab tab-lg flex-1 active-tab:tab-active px-2 sm:px-4" 
             id="tab-library-editor" 
             data-tab="#library-editor-panel" 
             aria-controls="library-editor-panel" 
             role="tab" 
             aria-selected="false"
           >
-            <span class="icon-[tabler--edit] inline-block me-1.5 size-5"></span>
-            提示词库编辑
+            <span class="icon-[tabler--edit] inline-block size-5 sm:me-1.5"></span>
+            <span class="hidden sm:inline">提示词库编辑</span>
+            <span class="sm:hidden" aria-label="提示词库编辑"></span>
           </button>
           <button 
             type="button" 
-            class="tab active-tab:tab-active" 
+            class="tab tab-lg flex-1 active-tab:tab-active px-2 sm:px-4" 
             id="tab-translator" 
             data-tab="#translator-panel" 
             aria-controls="translator-panel" 
             role="tab" 
             aria-selected="false"
           >
-            <span class="icon-[tabler--language] inline-block me-1.5 size-5"></span>
-            快速翻译
+            <span class="icon-[tabler--language] inline-block size-5 sm:me-1.5"></span>
+            <span class="hidden sm:inline">快速翻译</span>
+            <span class="sm:hidden" aria-label="快速翻译"></span>
           </button>
         </nav>
         
         <!-- Tabs 内容 -->
         <div class="mt-4">
-          <!-- 提示词拆分面板 -->
+          <!-- 提示词排序面板 -->
           <div id="badges-panel" role="tabpanel" aria-labelledby="tab-badges">
             <PromptBadges 
               :promptLibraryData="promptLibrary"
