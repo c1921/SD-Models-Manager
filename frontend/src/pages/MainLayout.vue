@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen h-screen flex flex-col overflow-hidden">
+  <div class="min-h-screen h-screen flex flex-col">
     <!-- 主导航栏 -->
     <header class="sticky top-0 z-10 shadow bg-base-100">
       <div class="px-4 sm:px-6 md:px-8 flex items-center justify-between h-16 mx-auto max-w-[1400px]">
@@ -128,7 +128,7 @@
     </div>
     
     <!-- 页面内容区 -->
-    <main class="flex-1 overflow-hidden">
+    <main class="flex-1 overflow-auto">
       <router-view />
     </main>
     
