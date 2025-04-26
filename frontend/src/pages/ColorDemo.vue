@@ -298,17 +298,17 @@ http://localhost:5173/colors
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted } from 'vue';
 
 // 设置主题
-const setTheme = (theme) => {
+const setTheme = (theme: string): void => {
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
 };
 
 // 跟随系统主题
-const setSystemTheme = () => {
+const setSystemTheme = (): void => {
   localStorage.removeItem('theme');
   const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
@@ -321,4 +321,10 @@ onMounted(() => {
     document.documentElement.setAttribute('data-theme', savedTheme);
   }
 });
+</script>
+
+<script lang="ts">
+export default {
+  name: 'ColorDemo'
+}
 </script> 
