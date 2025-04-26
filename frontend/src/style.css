@@ -12,8 +12,32 @@
 
 @import "flyonui/src/vendor/notyf.css";
 
+/* 自定义dark主题背景色系 - 使用属性选择器方式 */
+[data-theme="dark"] {
+  --color-base-100: oklch(25.33% 0.016 252.42);
+  --color-base-200: oklch(23.26% 0.014 253.1);
+  --color-base-300: oklch(21.15% 0.012 254.09);
+  --color-base-content: oklch(97.807% 0.029 256.847);
+  --color-primary: oklch(70% 0.165 254.624);
+  --color-primary-content: oklch(97% 0.014 254.604);
+  --color-secondary: oklch(44% 0.043 257.281);
+  --color-secondary-content: oklch(86% 0.022 252.894);
+  --color-accent: oklch(71% 0.202 349.761);
+  --color-accent-content: oklch(28% 0.109 3.907);
+  --color-neutral: oklch(70% 0.015 286.067);
+  --color-neutral-content: oklch(37% 0.013 285.805);
+  --color-info: oklch(74% 0.16 232.661);
+  --color-info-content: oklch(29% 0.066 243.157);
+  --color-success: oklch(76% 0.177 163.223);
+  --color-success-content: oklch(37% 0.077 168.94);
+  --color-warning: oklch(82% 0.189 84.429);
+  --color-warning-content: oklch(41% 0.112 45.904);
+  --color-error: oklch(51% 0.222 16.935);
+  --color-error-content: oklch(94% 0.03 12.58);
+}
+
 .notyf__icon {
   width: 26px !important;
   height: 26px !important;
   aspect-ratio: 1 / 1 !important;
-} 
+}
