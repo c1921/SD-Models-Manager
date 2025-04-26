@@ -15,7 +15,7 @@
                   to="/models" 
                   class="btn btn-sm" 
                   :class="[
-                    isModelPage ? 'btn-primary' : 'btn-ghost'
+                    isModelPage ? 'btn-primary' : 'btn-soft'
                   ]"
                 >
                   <span class="icon-[tabler--database] inline-block me-1.5 size-5"></span>
@@ -27,7 +27,7 @@
                   to="/prompts" 
                   class="btn btn-sm" 
                   :class="[
-                    isPromptPage ? 'btn-primary' : 'btn-ghost'
+                    isPromptPage ? 'btn-primary' : 'btn-soft'
                   ]"
                 >
                   <span class="icon-[tabler--square-letter-p] inline-block me-1.5 size-5"></span>
@@ -99,25 +99,25 @@
         <div class="flex flex-col gap-2">
           <router-link 
             to="/models" 
-            class="btn" 
-            :class="[
-              isModelPage ? 'btn-primary' : 'btn-ghost'
-            ]"
+            class="btn btn-xl justify-start w-full" 
+            :class="{ 'btn-primary': isModelPage }"
             data-overlay="#mobile-drawer"
           >
-            <span class="icon-[tabler--database] inline-block me-1.5 size-5"></span>
-            模型管理
+            <div class="w-8 flex justify-center">
+              <span class="icon-[tabler--database] size-6"></span>
+            </div>
+            <span>模型管理</span>
           </router-link>
           <router-link 
             to="/prompts" 
-            class="btn" 
-            :class="[
-              isPromptPage ? 'btn-primary' : 'btn-ghost'
-            ]"
+            class="btn btn-xl justify-start w-full" 
+            :class="{ 'btn-primary': isPromptPage }"
             data-overlay="#mobile-drawer"
           >
-            <span class="icon-[tabler--square-letter-p] inline-block me-1.5 size-5"></span>
-            提示词管理
+            <div class="w-8 flex justify-center">
+              <span class="icon-[tabler--square-letter-p] size-6"></span>
+            </div>
+            <span>提示词管理</span>
           </router-link>
           <!-- 这里可以添加更多导航项 -->
         </div>
