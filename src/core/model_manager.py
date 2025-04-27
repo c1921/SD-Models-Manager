@@ -50,6 +50,9 @@ class ModelManager:
         """扫描指定目录下的所有.safetensors文件"""
         print(f"开始扫描目录: {self.models_path}")
         
+        # 先清理不存在的模型
+        self._clean_nonexistent_models()
+        
         # 只扫描 checkpoints 和 loras 文件夹
         allowed_folders = ['checkpoints', 'loras']
         safetensors_files = []
@@ -143,8 +146,6 @@ class ModelManager:
         if os.path.exists(input_file):
             with open(input_file, "r", encoding="utf-8") as f:
                 self.models_info = json.load(f)
-            # 清理不存在的模型
-            self._clean_nonexistent_models()
 
     def _clean_nonexistent_models(self):
         """清理不存在的模型信息"""
