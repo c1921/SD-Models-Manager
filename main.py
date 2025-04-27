@@ -10,6 +10,7 @@ from pathlib import Path
 from src.core.model_manager import ModelManager
 from src.api.model_api import create_api
 from src.api.comfyui_api import setup_comfyui_routes
+from src.api.network_api import setup_network_routes
 from src.utils.file_utils import find_free_port
 
 def open_browser(url: str):
@@ -76,6 +77,9 @@ if __name__ == "__main__":
     
     # 设置ComfyUI路由
     setup_comfyui_routes(app)
+    
+    # 设置网络检测路由
+    setup_network_routes(app)
     
     # 在新线程中打开浏览器（如果未指定--no-browser）
     if not args.no_browser and frontend_url:
