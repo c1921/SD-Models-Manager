@@ -64,16 +64,12 @@
             <span class="icon-[tabler--settings] size-5"></span>
           </button>
           
-          <!-- 主题切换 -->
-          <button 
-            type="button"
-            class="btn btn-icon btn-outline"
-            title="切换主题"
-            @click="toggleDarkMode"
-          >
-            <span class="icon-[tabler--sun] size-5" v-if="!darkMode"></span>
-            <span class="icon-[tabler--moon] size-5" v-else></span>
-          </button>
+          <!-- 主题切换 - 使用FlyonUI的swap组件 -->
+          <label class="btn btn-icon btn-outline swap swap-rotate">
+            <input type="checkbox" v-model="darkMode" @change="toggleDarkMode" />
+            <span class="swap-on icon-[tabler--moon] size-5"></span>
+            <span class="swap-off icon-[tabler--sun] size-5"></span>
+          </label>
           
           <!-- 移动端菜单按钮 -->
           <button 
@@ -190,7 +186,6 @@ const networkStatus = ref<'success' | 'error' | 'warning' | 'unknown'>('unknown'
 
 // 切换暗色模式
 function toggleDarkMode() {
-  darkMode.value = !darkMode.value;
   const theme = darkMode.value ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
