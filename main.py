@@ -11,6 +11,9 @@ from src.core.model_manager import ModelManager
 from src.api.model_api import create_api
 from src.api.comfyui_api import setup_comfyui_routes
 from src.api.network_api import setup_network_routes
+from src.api.common_api import setup_common_routes
+from src.api.frontend_api import setup_frontend_routes
+from src.api.prompt_routes import setup_prompt_routes
 from src.utils.file_utils import find_free_port
 
 def open_browser(url: str):
@@ -72,14 +75,23 @@ if __name__ == "__main__":
     # 加载已有的模型信息
     manager.load_models_info()
     
-    # 创建 FastAPI 应用并传入前端URL
-    app = create_api(manager, frontend_url=args.frontend)
+    # 创建 FastAPI 应用
+    app = create_api(manager)
+    
+    # 设置前端路由(静态文件、根路径等)
+    setup_frontend_routes(app, frontend_url=frontend_url)
     
     # 设置ComfyUI路由
     setup_comfyui_routes(app)
     
     # 设置网络检测路由
     setup_network_routes(app)
+    
+    # 设置通用API路由
+    setup_common_routes(app)
+    
+    # 设置提示词相关路由
+    setup_prompt_routes(app)
     
     # 在新线程中打开浏览器（如果未指定--no-browser）
     if not args.no_browser and frontend_url:
