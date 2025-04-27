@@ -21,6 +21,10 @@ class ModelManager:
         self.models_info: Dict[str, Any] = {}
         self.images_path = Path("static/images")  # 添加图片保存路径
         self.images_path.mkdir(parents=True, exist_ok=True)  # 确保目录存在
+        # 设置数据目录和模型信息文件路径
+        self.data_dir = Path("data")
+        self.data_dir.mkdir(parents=True, exist_ok=True)  # 确保数据目录存在
+        self.models_info_file = self.data_dir / "models_info.json"
         self.hash_utils = HashUtils()
         # 添加并发限制和超时设置
         self.semaphore = asyncio.Semaphore(5)  # 限制并发请求数
@@ -136,16 +140,28 @@ class ModelManager:
             except Exception as e:
                 print(f"获取模型信息时出错: {file_path.name}, 错误: {str(e)}")
     
-    def save_models_info(self, output_file="models_info.json"):
+    def save_models_info(self):
         """保存模型信息到JSON文件"""
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(self.models_info, f, ensure_ascii=False, indent=2)
+        try:
+            with open(self.models_info_file, "w", encoding="utf-8") as f:
+                json.dump(self.models_info, f, ensure_ascii=False, indent=2)
+            print(f"模型信息已保存到: {self.models_info_file}")
+        except Exception as e:
+            print(f"保存模型信息失败: {str(e)}")
             
-    def load_models_info(self, input_file="models_info.json"):
+    def load_models_info(self):
         """从JSON文件加载模型信息"""
-        if os.path.exists(input_file):
-            with open(input_file, "r", encoding="utf-8") as f:
-                self.models_info = json.load(f)
+        try:
+            if self.models_info_file.exists():
+                with open(self.models_info_file, "r", encoding="utf-8") as f:
+                    self.models_info = json.load(f)
+                print(f"已从 {self.models_info_file} 加载模型信息")
+            else:
+                self.models_info = {}
+                print(f"模型信息文件 {self.models_info_file} 不存在，已初始化空数据")
+        except Exception as e:
+            print(f"加载模型信息失败: {str(e)}")
+            self.models_info = {}
 
     def _clean_nonexistent_models(self):
         """清理不存在的模型信息"""
@@ -293,3 +309,7 @@ class ModelManager:
         self.save_config()
         
         return current_state 
+
+    def get_default_settings(self):
+        """获取默认设置"""
+        return {"models_path": "", "output_file": str(self.models_info_file), "custom_nsfw_models": []} 
