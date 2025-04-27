@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import { ModelsAPI } from '../api/models';
+import { ComfyUIAPI } from '../api/comfyui';
 
 const props = withDefaults(defineProps<{
   // 如果父组件不提供这些属性，组件将进行自动检测
@@ -51,7 +51,7 @@ let statusInterval: number | null = null;
 // 检查ComfyUI状态
 async function checkStatus() {
   try {
-    const result = await ModelsAPI.checkComfyUIStatus();
+    const result = await ComfyUIAPI.checkStatus();
     internalStatus.value = result.status;
     internalMessage.value = result.message;
     

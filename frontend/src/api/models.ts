@@ -196,11 +196,5 @@ export const ModelsAPI = {
   toggleModelNsfw: async (modelId: string): Promise<{nsfw: boolean}> => {
     const response = await apiClient.post('/toggle-nsfw', { model_id: modelId });
     return { nsfw: response.data.nsfw };
-  },
-  
-  // 检查ComfyUI状态
-  checkComfyUIStatus: async (): Promise<{status: 'running' | 'stopped' | 'unknown', message: string}> => {
-    const response = await apiClient.get('/comfyui-status');
-    return response.data;
   }
 }; 
