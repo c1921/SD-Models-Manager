@@ -1,11 +1,5 @@
 <template>
   <div class="px-1">
-    <!-- 加载错误提示 -->
-    <div v-if="error" class="alert alert-error" role="alert">
-      <span class="icon-[tabler--alert-circle] me-2"></span>
-      {{ error }}
-    </div>
-
     <!-- 加载进度条 -->
     <div v-if="loading" class="text-center py-8">
       <div class="w-full mb-4">
@@ -120,7 +114,7 @@ import type { Model } from '../api/models';
 import { ModelsAPI } from '../api/models';
 import toast from '../utils/toast';
 
-defineProps<{
+const props = defineProps<{
   models: Model[];
   filteredModels: Model[];
   loading: boolean;
@@ -135,6 +129,14 @@ const emit = defineEmits<{
   'model-click': [model: Model];
   'model-updated': [model: Model];
 }>();
+
+// 监视error属性，当有错误时显示toast通知
+import { watch } from 'vue';
+watch(() => props.error, (newError) => {
+  if (newError) {
+    toast.error(newError);
+  }
+});
 
 function onOpenSettings() {
   // 触发全局事件而不是组件事件

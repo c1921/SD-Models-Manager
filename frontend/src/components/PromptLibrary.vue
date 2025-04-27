@@ -11,11 +11,6 @@
           <i class="icon-[tabler--loader-2] animate-spin mr-2"></i> 正在加载提示词库...
         </div>
         
-        <!-- 错误信息 -->
-        <div v-else-if="errorMessage" class="text-center text-error py-6 w-full">
-          <i class="icon-[tabler--alert-circle] mr-2"></i> {{ errorMessage }}
-        </div>
-        
         <!-- 空状态 -->
         <div v-else-if="promptLibraryFiltered.length === 0" class="text-center text-base-content/50 py-6 w-full">
           暂无提示词，请添加或选择分类
@@ -94,6 +89,7 @@
 <script lang="ts">
 import { defineComponent, ref, computed, onMounted, watch } from 'vue';
 import type { PromptLibraryItem } from '../api/prompts';
+import toast from '../utils/toast'; // 导入toast通知
 
 export default defineComponent({
   name: 'PromptLibrary',
@@ -114,7 +110,6 @@ export default defineComponent({
     const selectedCategory = ref('');
     const selectedSubCategory = ref('');
     const isLoading = ref(false);
-    const errorMessage = ref('');
     
     // 监听提示词库数据变化
     watch(() => props.promptLibraryData, (newData) => {
@@ -182,13 +177,12 @@ export default defineComponent({
     const loadPromptLibrary = async () => {
       try {
         isLoading.value = true;
-        errorMessage.value = '';
         
         // 数据现在从父组件传入，不需要再调用API
         console.log('[提示词库] 从父组件加载数据，数量:', promptLibrary.value.length);
       } catch (error) {
         console.error('加载提示词库失败:', error);
-        errorMessage.value = '加载提示词库失败，请刷新页面重试';
+        toast.error('加载提示词库失败，请刷新页面重试');
       } finally {
         isLoading.value = false;
       }
@@ -210,8 +204,7 @@ export default defineComponent({
       subCategories,
       selectPrompt,
       selectCategory,
-      isLoading,
-      errorMessage,
+      isLoading
     };
   }
 });

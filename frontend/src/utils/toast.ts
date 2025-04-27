@@ -1,13 +1,7 @@
-import { Notyf } from 'notyf';
+import { useToast } from 'vue-toastification';
 
-// 创建Notyf实例
-const notyf = new Notyf({
-  duration: 2000,
-  position: {
-    x: 'right',
-    y: 'top'
-  }
-});
+// 获取toast实例
+const toast = useToast();
 
 // 导出简单的toast接口
 export default {
@@ -16,7 +10,7 @@ export default {
    * @param message 消息内容
    */
   success(message: string) {
-    notyf.success(message);
+    toast.success(message);
   },
 
   /**
@@ -24,22 +18,22 @@ export default {
    * @param message 消息内容
    */
   error(message: string) {
-    notyf.error(message);
+    toast.error(message);
   },
 
   /**
-   * 显示信息消息 (使用success实现)
+   * 显示信息消息
    * @param message 消息内容
    */
   info(message: string) {
-    notyf.success(message);
+    toast.info(message);
   },
 
   /**
-   * 显示警告消息 (使用error实现)
+   * 显示警告消息
    * @param message 消息内容
    */
   warning(message: string) {
-    notyf.error(message);
+    toast.warning(message);
   }
 };

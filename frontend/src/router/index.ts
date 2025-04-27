@@ -3,6 +3,8 @@ import ModelManager from '../pages/ModelManager.vue'
 import PromptManager from '../pages/PromptManager.vue'
 // @ts-ignore 由于只在开发环境使用，可以忽略类型检查
 import ColorDemo from '../pages/ColorDemo.vue'
+// @ts-ignore 由于只在开发环境使用，可以忽略类型检查
+import ToastDemo from '../pages/ToastDemo.vue'
 
 // 定义路由配置
 const routes = [
@@ -28,7 +30,7 @@ const routes = [
   }
 ]
 
-// 在开发环境中添加ColorDemo路由
+// 在开发环境中添加测试路由
 if (import.meta.env.DEV) {
   routes.push({
     path: '/colors',
@@ -36,6 +38,16 @@ if (import.meta.env.DEV) {
     component: ColorDemo,
     meta: {
       title: 'FlyonUI 颜色系统示例'
+    }
+  })
+  
+  // 添加Toast测试页面
+  routes.push({
+    path: '/toast',
+    name: 'ToastDemo',
+    component: ToastDemo,
+    meta: {
+      title: 'Toast 通知测试'
     }
   })
 }

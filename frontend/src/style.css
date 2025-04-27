@@ -10,7 +10,6 @@
 
 @plugin "@iconify/tailwind4";
 
-@import "flyonui/src/vendor/notyf.css";
 
 [data-theme="dark"] {
   --color-base-100: oklch(25.33% 0.016 252.42);
@@ -56,10 +55,4 @@
   --color-warning-content: oklch(41% 0.112 45.904);
   --color-error: oklch(70% 0.191 22.216);
   --color-error-content: oklch(25% 0.092 26.042);
-}
-
-.notyf__icon {
-  width: 26px !important;
-  height: 26px !important;
-  aspect-ratio: 1 / 1 !important;
 }

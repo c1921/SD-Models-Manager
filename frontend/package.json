@@ -15,11 +15,11 @@
     "@tailwindcss/vite": "^4.1.4",
     "axios": "^1.8.4",
     "flyonui": "^2.1.0",
-    "notyf": "^3.10.0",
     "sortablejs": "^1.15.6",
     "tailwindcss": "^4.1.4",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "vue-toastification": "^2.0.0-rc.5"
   },
   "devDependencies": {
     "@types/node": "^22.14.1",

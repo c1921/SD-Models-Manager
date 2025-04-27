@@ -86,6 +86,7 @@ import { PromptsAPI } from '../api/prompts'; // 导入API
 import type { PromptLibraryItem } from '../api/prompts'; // 从API文件导入类型
 import PromptLibrary from './PromptLibrary.vue'; // 导入提示词库组件
 import { useDebounce } from '../utils/debounce'; // 导入防抖工具
+import toast from '../utils/toast'; // 导入toast通知
 
 // 提示词数据结构
 interface PromptData {
@@ -445,7 +446,7 @@ export default defineComponent({
       // 检查是否有正在翻译的提示词
       const hasTranslating = prompts.value.some(p => p.isTranslating);
       if (hasTranslating) {
-        if (!confirm('有部分提示词正在翻译中，是否继续复制？')) {
+        if (!window.confirm('有部分提示词正在翻译中，是否继续复制？')) {
           return;
         }
       }
@@ -460,10 +461,11 @@ export default defineComponent({
       
       navigator.clipboard.writeText(text)
         .then(() => {
-          alert('已复制到剪贴板');
+          toast.success('已复制到剪贴板');
         })
         .catch(err => {
           console.error('复制失败:', err);
+          toast.error('复制失败，请重试');
         });
     };
     
@@ -471,7 +473,7 @@ export default defineComponent({
     const clearAll = () => {
       if (prompts.value.length === 0) return;
       
-      if (confirm('确认清空所有提示词？')) {
+      if (window.confirm('确认清空所有提示词？')) {
         prompts.value = [];
         
         // 更新输入框，但不触发计算属性的set方法
@@ -480,6 +482,8 @@ export default defineComponent({
         setTimeout(() => {
           isUpdatingFromTextarea = false;
         }, 0);
+        
+        toast.info('已清空所有提示词');
       }
     };
     

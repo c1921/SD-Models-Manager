@@ -113,12 +113,6 @@
         {{ isSaving ? '保存中...' : '保存到提示词库' }}
       </button>
     </div>
-    
-    <!-- 错误信息 -->
-    <div v-if="errorMessage" class="alert alert-error mt-4">
-      <i class="icon-[tabler--alert-circle]"></i>
-      <span>{{ errorMessage }}</span>
-    </div>
   </div>
 </template>
 
@@ -127,6 +121,7 @@ import { defineComponent, ref, computed, onMounted, watch, onBeforeUnmount } fro
 import { PromptsAPI } from '../api/prompts';
 import type { PromptLibraryItem, CreatePromptLibraryItemParams } from '../api/prompts';
 import { useDebounce } from '../utils/debounce';
+import toast from '../utils/toast'; // 导入toast通知
 
 // 提示词数据结构
 interface NewPromptData {
@@ -161,7 +156,6 @@ export default defineComponent({
     const newCategory = ref('');
     const newSubCategory = ref('');
     const isSaving = ref(false);
-    const errorMessage = ref('');
     
     // 使用防抖工具
     const translateDebounce = useDebounce(watchNewPromptText, 800);
@@ -262,7 +256,6 @@ export default defineComponent({
       showAddSubCategory.value = false;
       newCategory.value = '';
       newSubCategory.value = '';
-      errorMessage.value = '';
       // 注意：不重置localCategories和localSubCategories，保留用户添加的分类
     };
     
@@ -272,7 +265,7 @@ export default defineComponent({
       
       // 检查是否已存在
       if (categories.value.includes(newCategory.value.trim())) {
-        alert('该分类已存在');
+        toast.warning('该分类已存在');
         return;
       }
       
@@ -291,7 +284,7 @@ export default defineComponent({
       
       // 检查是否已存在
       if (subCategories.value.includes(newSubCategory.value.trim())) {
-        alert('该二级分类已存在');
+        toast.warning('该二级分类已存在');
         return;
       }
       
@@ -344,7 +337,7 @@ export default defineComponent({
         }
       } catch (error) {
         console.error('翻译失败:', error);
-        errorMessage.value = '翻译失败，请手动输入翻译';
+        toast.error('翻译失败，请手动输入翻译');
       } finally {
         isLibTranslating.value = false;
       }
@@ -373,7 +366,6 @@ export default defineComponent({
       
       try {
         isSaving.value = true;
-        errorMessage.value = '';
         
         const newItem: CreatePromptLibraryItemParams = {
           chinese: newPrompt.value.isEnglish ? newPrompt.value.translated : newPrompt.value.inputText,
@@ -397,10 +389,10 @@ export default defineComponent({
         emit('saved', savedItem);
         
         // 显示成功消息
-        alert('提示词已成功' + (props.selectedPrompt ? '更新' : '添加') + '到提示词库');
+        toast.success('提示词已成功' + (props.selectedPrompt ? '更新' : '添加') + '到提示词库');
       } catch (error) {
         console.error('保存提示词失败:', error);
-        errorMessage.value = '保存提示词失败，请重试';
+        toast.error('保存提示词失败，请重试');
       } finally {
         isSaving.value = false;
       }
@@ -433,7 +425,6 @@ export default defineComponent({
       categories,
       subCategories,
       canSaveToLibrary,
-      errorMessage,
       localCategories,
       localSubCategories,
       categoryInput,
