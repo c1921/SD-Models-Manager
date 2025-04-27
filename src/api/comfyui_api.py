@@ -1,9 +1,10 @@
 import socket
-import requests
 import time
 import os
 import platform
 import subprocess
+import asyncio
+import aiohttp
 from typing import Dict, Optional, List, Any
 from fastapi import APIRouter, HTTPException, FastAPI
 
@@ -11,6 +12,20 @@ from fastapi import APIRouter, HTTPException, FastAPI
 COMFYUI_HOST = '127.0.0.1'
 COMFYUI_PORT = 8188
 COMFYUI_API_URL = f'http://{COMFYUI_HOST}:{COMFYUI_PORT}/api'
+
+async def is_port_open(host, port, timeout=1):
+    """异步检测端口是否开放"""
+    try:
+        # 使用asyncio创建TCP连接
+        _, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, port),
+            timeout=timeout
+        )
+        writer.close()
+        await writer.wait_closed()
+        return True
+    except (asyncio.TimeoutError, OSError):
+        return False
 
 def create_comfyui_api():
     """创建ComfyUI相关API路由
@@ -28,24 +43,22 @@ def create_comfyui_api():
             dict: 包含status状态(running/stopped/unknown)和详细信息
         """
         try:
-            # 尝试连接ComfyUI默认端口8188
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(1)  # 设置超时时间为1秒
-            result = sock.connect_ex((COMFYUI_HOST, COMFYUI_PORT))
-            sock.close()
+            # 异步检测ComfyUI端口是否开放
+            port_open = await is_port_open(COMFYUI_HOST, COMFYUI_PORT, timeout=0.5)
             
-            if result == 0:
+            if port_open:
                 # 端口开放，ComfyUI正在运行
                 # 尝试获取ComfyUI更详细的信息
                 try:
-                    response = requests.get(f'{COMFYUI_API_URL}/system_stats', timeout=2)
-                    if response.status_code == 200:
-                        data = response.json()
-                        return {
-                            "status": "running", 
-                            "message": "ComfyUI 正在运行中",
-                            "details": data
-                        }
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(f'{COMFYUI_API_URL}/system_stats', timeout=2) as response:
+                            if response.status == 200:
+                                data = await response.json()
+                                return {
+                                    "status": "running", 
+                                    "message": "ComfyUI 正在运行中",
+                                    "details": data
+                                }
                 except:
                     # 如果获取详细信息失败，仅返回运行状态
                     pass
@@ -66,32 +79,32 @@ def create_comfyui_api():
             dict: 包含ComfyUI的各种信息
         """
         try:
-            # 先检查是否在运行
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(1)
-            result = sock.connect_ex((COMFYUI_HOST, COMFYUI_PORT))
-            sock.close()
+            # 异步检测ComfyUI是否在运行
+            port_open = await is_port_open(COMFYUI_HOST, COMFYUI_PORT, timeout=0.5)
             
-            if result != 0:
+            if not port_open:
                 raise HTTPException(status_code=503, detail="ComfyUI未运行")
                 
             # 获取系统信息
             system_info = {}
-            try:
-                response = requests.get(f'{COMFYUI_API_URL}/system_stats', timeout=2)
-                if response.status_code == 200:
-                    system_info = response.json()
-            except:
-                system_info = {"error": "无法获取系统信息"}
-                
-            # 获取节点信息
             nodes_info = {}
-            try:
-                response = requests.get(f'{COMFYUI_API_URL}/object_info', timeout=2)
-                if response.status_code == 200:
-                    nodes_info = response.json()
-            except:
-                nodes_info = {"error": "无法获取节点信息"}
+            
+            async with aiohttp.ClientSession() as session:
+                # 异步获取系统信息
+                try:
+                    async with session.get(f'{COMFYUI_API_URL}/system_stats', timeout=2) as response:
+                        if response.status == 200:
+                            system_info = await response.json()
+                except:
+                    system_info = {"error": "无法获取系统信息"}
+                
+                # 异步获取节点信息
+                try:
+                    async with session.get(f'{COMFYUI_API_URL}/object_info', timeout=2) as response:
+                        if response.status == 200:
+                            nodes_info = await response.json()
+                except:
+                    nodes_info = {"error": "无法获取节点信息"}
                 
             return {
                 "status": "running",
