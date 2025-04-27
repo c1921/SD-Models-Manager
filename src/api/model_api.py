@@ -9,6 +9,7 @@ from src.utils.file_utils import select_directory
 from src.version.version import VERSION_STR, COMPANY, COPYRIGHT
 from src.api.prompt_api import create_prompt_api
 from src.api.prompt_library_api import create_prompt_library_api
+from src.api.network_api import setup_network_routes
 from src.core.prompt_manager import PromptManager
 
 class PathUpdate(BaseModel):
@@ -123,6 +124,9 @@ def create_api(manager, frontend_url=None):
     data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data")
     prompt_library_router = create_prompt_library_api(data_dir)
     app.include_router(prompt_library_router, prefix="/api")
+
+    # 集成网络状态检测API
+    setup_network_routes(app)
 
     @app.get("/api/models")
     async def get_models():

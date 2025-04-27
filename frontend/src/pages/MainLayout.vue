@@ -48,6 +48,12 @@
             :check-interval="10000"
           />
           
+          <!-- 网络状态指示器组件 -->
+          <NetworkStatus
+            :auto-check="true"
+            v-model:status="networkStatus"
+          />
+          
           <!-- 设置按钮 -->
           <button 
             type="button"
@@ -156,6 +162,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import SettingsModal from '../components/SettingsModal.vue';
 import ComfyUIStatus from '../components/ComfyUIStatus.vue';
+import NetworkStatus from '../components/NetworkStatus.vue';
 import { ModelsAPI } from '../api/models';
 
 // 使用Vue Router的API获取当前路由信息
@@ -177,6 +184,9 @@ const settingsModalRef = ref<InstanceType<typeof SettingsModal> | null>(null);
 // ComfyUI状态 - 初始化为unknown，将由组件负责更新
 const comfyUIStatus = ref<'running' | 'stopped' | 'unknown'>('unknown');
 const comfyUIMessage = ref('正在检查ComfyUI状态...');
+
+// 网络状态显示控制
+const networkStatus = ref<'success' | 'error' | 'warning' | 'unknown'>('unknown');
 
 // 切换暗色模式
 function toggleDarkMode() {
