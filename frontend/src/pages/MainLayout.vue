@@ -154,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import SettingsModal from '../components/SettingsModal.vue';
 import ComfyUIStatus from '../components/ComfyUIStatus.vue';
@@ -215,6 +215,9 @@ async function scanModels() {
 
 // 生命周期钩子
 onMounted(async () => {
+  // 添加事件监听器以响应全局设置模态框打开请求
+  window.addEventListener('open-global-settings-modal', goToSettings);
+  
   // 从 localStorage 加载主题设置
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme) {
@@ -242,5 +245,10 @@ onMounted(async () => {
   } catch (e) {
     console.error('获取模型目录失败', e);
   }
+});
+
+// 在组件卸载时移除事件监听器
+onUnmounted(() => {
+  window.removeEventListener('open-global-settings-modal', goToSettings);
 });
 </script>

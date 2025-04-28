@@ -120,6 +120,11 @@ const error = ref('');
 const selectedModel = ref<Model | null>(null);
 let scanInterval: ReturnType<typeof setInterval> | null = null;
 
+// 事件处理函数
+const openSettingsHandler = () => {
+  window.dispatchEvent(new CustomEvent('open-global-settings-modal'));
+};
+
 // UI状态控制
 const filterSidebarRef = ref<InstanceType<typeof FilterSidebar> | null>(null);
 const modelDetailModalRef = ref<InstanceType<typeof ModelDetailModal> | null>(null);
@@ -320,6 +325,9 @@ onMounted(async () => {
   // 添加事件监听器以响应扫描模型事件
   window.addEventListener('scan-models', scanModels);
   
+  // 添加事件监听器以响应打开设置模态框事件
+  window.addEventListener('open-settings-modal', openSettingsHandler);
+  
   // 从 localStorage 加载设置
   const savedNsfw = localStorage.getItem('nsfw');
   if (savedNsfw !== null) {
@@ -341,6 +349,7 @@ onMounted(async () => {
 onUnmounted(() => {
   // 移除事件监听器
   window.removeEventListener('scan-models', scanModels);
+  window.removeEventListener('open-settings-modal', openSettingsHandler);
   
   if (scanInterval !== null) {
     clearInterval(scanInterval);
