@@ -11,12 +11,15 @@ import asyncio
 from aiohttp import ClientTimeout
 
 from src.utils.hash_utils import HashUtils
+from src.core.config_manager import ConfigManager
 
 class ModelManager:
     def __init__(self, config_file="config.json"):
-        self.config_file = config_file
-        self.config = self.load_config()
-        self.models_path = Path(self.config.get("models_path", "")) if self.config.get("models_path") else None
+        # 使用配置管理器
+        self.config_manager = ConfigManager(config_file)
+        models_path_str = self.config_manager.get_model_path()
+        # 如果路径为空，则设置为 None
+        self.models_path = Path(models_path_str) if models_path_str else None
         self.api_base_url = "https://civitai.com/api/v1"
         self.models_info: Dict[str, Any] = {}
         self.images_path = Path("static/images")  # 添加图片保存路径
@@ -29,29 +32,22 @@ class ModelManager:
         # 添加并发限制和超时设置
         self.semaphore = asyncio.Semaphore(5)  # 限制并发请求数
         self.timeout = ClientTimeout(total=10)  # 10秒超时
-        # 添加自定义NSFW模型ID列表
-        self.custom_nsfw_models = self.config.get("custom_nsfw_models", [])
         
-    def load_config(self) -> dict:
-        """加载配置文件"""
-        if os.path.exists(self.config_file):
-            with open(self.config_file, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return {"models_path": "", "output_file": "models_info.json", "custom_nsfw_models": []}
-    
-    def save_config(self):
-        """保存配置文件"""
-        with open(self.config_file, "w", encoding="utf-8") as f:
-            json.dump(self.config, f, indent=2, ensure_ascii=False)
-    
     def update_models_path(self, path: str):
         """更新模型路径"""
-        self.models_path = Path(path)
-        self.config["models_path"] = str(self.models_path)
-        self.save_config()
-    
+        if path:
+            self.models_path = Path(path)
+        else:
+            self.models_path = None
+        self.config_manager.update_model_path(path)
+            
     async def scan_models(self):
         """扫描指定目录下的所有.safetensors文件"""
+        if not self.models_path:
+            print("模型路径未设置")
+            yield f"data: {json.dumps({'progress': 1, 'message': '模型路径未设置', 'status': 'completed'})}\n\n"
+            return
+            
         print(f"开始扫描目录: {self.models_path}")
         
         # 先清理不存在的模型
@@ -223,6 +219,9 @@ class ModelManager:
     def get_model_display_info(self, model_path: str) -> dict:
         """获取用于显示的模型信息"""
         model_info = self.models_info.get(model_path, {})
+        # 获取自定义NSFW模型列表
+        custom_nsfw_models = self.config_manager.get_custom_nsfw_models()
+        
         if not model_info:
             return {
                 "name": Path(model_path).name,
@@ -231,8 +230,8 @@ class ModelManager:
                 "preview_url": None,
                 "description": "未找到模型信息",
                 "baseModel": "未知",
-                "nsfw": str(model_path) in self.custom_nsfw_models,  # 检查是否在自定义NSFW列表中
-                "custom_nsfw": str(model_path) in self.custom_nsfw_models,  # 新增自定义NSFW标记
+                "nsfw": str(model_path) in custom_nsfw_models,  # 检查是否在自定义NSFW列表中
+                "custom_nsfw": str(model_path) in custom_nsfw_models,  # 新增自定义NSFW标记
                 "original_nsfw": False,  # 新增原始NSFW标记
                 "nsfwLevel": 0,
             }
@@ -245,8 +244,8 @@ class ModelManager:
         # 添加本地图片路径
         local_preview = info.get("local_preview")
         
-        # 如果在自定义NSFW列表中，覆盖API返回的nsfw值
-        is_custom_nsfw = str(model_path) in self.custom_nsfw_models
+        # 检查NSFW状态
+        is_custom_nsfw = str(model_path) in custom_nsfw_models
         is_original_nsfw = model_data.get("nsfw", False)
         
         return {
@@ -263,6 +262,17 @@ class ModelManager:
 
     def get_all_models_info(self) -> list:
         """获取所有模型的显示信息"""
+        if not self.models_path:
+            # 如果模型路径未设置，返回所有模型信息
+            return [
+                {
+                    "path": model_path,
+                    **self.get_model_display_info(model_path)
+                }
+                for model_path in self.models_info.keys()
+            ]
+        
+        # 模型路径已设置，只返回该路径下的模型
         current_path = str(self.models_path)
         return [
             {
@@ -271,7 +281,7 @@ class ModelManager:
             }
             for model_path in self.models_info.keys()
             if str(model_path).startswith(current_path)
-        ] 
+        ]
 
     def toggle_custom_nsfw(self, model_path: str) -> bool:
         """切换模型的自定义NSFW状态
@@ -295,21 +305,5 @@ class ModelManager:
             if is_original_nsfw:
                 return True  # 保持NSFW状态
         
-        if model_path in self.custom_nsfw_models:
-            # 如果模型已在自定义NSFW列表中，则移除
-            self.custom_nsfw_models.remove(model_path)
-            current_state = False
-        else:
-            # 否则添加到列表中
-            self.custom_nsfw_models.append(model_path)
-            current_state = True
-            
-        # 更新配置并保存
-        self.config["custom_nsfw_models"] = self.custom_nsfw_models
-        self.save_config()
-        
-        return current_state 
-
-    def get_default_settings(self):
-        """获取默认设置"""
-        return {"models_path": "", "output_file": str(self.models_info_file), "custom_nsfw_models": []} 
+        # 使用配置管理器切换NSFW状态
+        return self.config_manager.toggle_model_nsfw(model_path)

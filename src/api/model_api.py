@@ -62,6 +62,12 @@ def create_api(manager):
             "is_path_valid": os.path.exists(manager.models_path) if manager.models_path else False
         }
 
+    @app.get("/api/model-path")
+    async def get_model_path():
+        """获取模型目录"""
+        path = str(manager.models_path) if manager.models_path else ""
+        return {"path": path}
+
     @app.post("/api/toggle-nsfw")
     async def toggle_model_nsfw(model_param: ModelIdParam):
         """切换模型的NSFW状态"""

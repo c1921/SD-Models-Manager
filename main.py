@@ -7,6 +7,7 @@ import os
 import sys
 from pathlib import Path
 
+from src.core.config_manager import ConfigManager
 from src.core.model_manager import ModelManager
 from src.api.model_api import create_api
 from src.api.comfyui_api import setup_comfyui_routes
@@ -46,6 +47,7 @@ if __name__ == "__main__":
     parser.add_argument('--frontend', default=None, help='前端URL地址，如http://localhost:5173')
     parser.add_argument('--no-browser', action='store_true', help='不自动打开浏览器')
     parser.add_argument('--dev', action='store_true', help='开发模式 (等同于 --frontend http://localhost:5173 --no-browser)')
+    parser.add_argument('--config', default='config.json', help='配置文件路径')
     args = parser.parse_args()
 
     # 获取可用端口
@@ -69,8 +71,11 @@ if __name__ == "__main__":
             # 没有前端，只使用API
             frontend_url = None
     
-    # 创建 ModelManager 实例
-    manager = ModelManager()
+    # 创建配置管理器
+    config_manager = ConfigManager(args.config)
+    
+    # 创建 ModelManager 实例，并传入配置管理器
+    manager = ModelManager(args.config)
     
     # 加载已有的模型信息
     manager.load_models_info()
@@ -109,4 +114,4 @@ if __name__ == "__main__":
         print("未检测到前端，以纯API模式运行")
     
     # 启动 FastAPI 服务器
-    uvicorn.run(app, host="127.0.0.1", port=port) 
+    uvicorn.run(app, host="127.0.0.1", port=port)
