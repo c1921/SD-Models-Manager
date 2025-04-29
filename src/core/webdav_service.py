@@ -504,7 +504,11 @@ class WebDAVService:
                             # 解压备份
                             shutil.unpack_archive(temp_zip_path, ".")
                             
-                            return {"success": True, "message": f"恢复成功，原数据已备份至 {backup_dir}"}
+                            return {
+                                "success": True, 
+                                "message": f"恢复成功，原数据已备份至 {backup_dir}。需要重启应用以加载恢复的数据。",
+                                "require_restart": True
+                            }
                         elif response.status == 404:
                             return {"success": False, "message": f"备份文件不存在: {filename}"}
                         elif response.status == 401:

@@ -17,6 +17,7 @@ from src.api.common_api import setup_common_routes
 from src.api.frontend_api import setup_frontend_routes
 from src.api.prompt_routes import setup_prompt_routes
 from src.api.webdav_api import router as webdav_router
+from src.api.system_api import router as system_router
 from src.services.backup_service import BackupService
 from src.utils.file_utils import find_free_port
 
@@ -104,6 +105,9 @@ if __name__ == "__main__":
     
     # 添加WebDAV备份路由
     app.include_router(webdav_router)
+    
+    # 添加System API路由
+    app.include_router(system_router)
     
     # 启动自动备份服务（除非指定了 --no-backup）
     backup_service = None

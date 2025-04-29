@@ -516,12 +516,63 @@ async function restoreBackup(filename: string) {
     const result = await response.json();
     statusMessage.value = result.message;
     statusSuccess.value = result.success;
+    
+    if (result.success) {
+      // 检查是否需要重启
+      if (result.require_restart) {
+        // 显示重启提示对话框
+        setTimeout(() => {
+          showRestartDialog();
+        }, 1000);
+      }
+    }
   } catch (e) {
     statusMessage.value = '恢复备份失败';
     statusSuccess.value = false;
     console.error('恢复备份失败', e);
   } finally {
     loading.value = false;
+  }
+}
+
+// 重启应用函数
+async function restartApp() {
+  try {
+    loading.value = true;
+    const response = await fetch('/api/system/restart', {
+      method: 'POST'
+    });
+    
+    if (response.ok) {
+      statusMessage.value = '应用正在重启，请稍候...';
+      statusSuccess.value = true;
+      
+      // 3秒后刷新页面
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    } else {
+      const result = await response.json();
+      statusMessage.value = result.detail || '重启失败，请手动刷新页面';
+      statusSuccess.value = false;
+    }
+  } catch (e) {
+    statusMessage.value = '重启失败，请手动刷新页面';
+    statusSuccess.value = false;
+    console.error('重启应用失败', e);
+  } finally {
+    loading.value = false;
+  }
+}
+
+// 显示重启提示对话框
+function showRestartDialog() {
+  const shouldRestart = confirm('备份恢复成功！为了使更改生效，需要重启应用。是否立即重启？');
+  if (shouldRestart) {
+    restartApp();
+  } else {
+    statusMessage.value = '备份已恢复，请手动刷新页面使更改生效';
+    statusSuccess.value = true;
   }
 }
 
