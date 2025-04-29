@@ -108,13 +108,13 @@
             <div id="backup-tab-content" class="hidden" role="tabpanel" aria-labelledby="backup-tab-item">
               <div class="mb-6">
                 <div class="form-control mb-4">
-                  <label class="label cursor-pointer justify-start gap-2">
-                    <input type="checkbox" class="toggle toggle-primary" v-model="webdavSettings.enabled" />
-                    <span class="label-text font-medium text-base-content">启用WebDAV备份</span>
+                  <label class="custom-option flex flex-row items-start gap-3">
+                    <input type="checkbox" class="checkbox checkbox-primary mt-1" v-model="webdavSettings.enabled" />
+                    <span class="label-text w-full text-start">
+                      <span class="text-base font-medium text-base-content">启用WebDAV备份</span>
+                      <span class="block text-sm text-base-content/70 mt-1">定期将数据备份到WebDAV服务器</span>
+                    </span>
                   </label>
-                  <p class="text-sm text-base-content/70 mt-1 ml-12">
-                    定期将数据备份到WebDAV服务器
-                  </p>
                 </div>
                 
                 <div class="space-y-4" v-if="webdavSettings.enabled">
@@ -124,10 +124,11 @@
                     </label>
                     <input 
                       type="text" 
-                      class="input input-bordered w-full bg-base-100 text-base-content" 
+                      class="input input-bordered w-full bg-base-100 text-base-content focus:input-primary" 
                       placeholder="例如: https://dav.example.com/remote.php/dav/files/username/" 
                       v-model="webdavSettings.url"
                     />
+                    <span class="helper-text text-xs text-base-content/60 mt-1">请输入完整的WebDAV服务器地址</span>
                   </div>
                   
                   <div class="form-control w-full">
@@ -136,7 +137,7 @@
                     </label>
                     <input 
                       type="text" 
-                      class="input input-bordered w-full bg-base-100 text-base-content" 
+                      class="input input-bordered w-full bg-base-100 text-base-content focus:input-primary" 
                       placeholder="WebDAV用户名" 
                       v-model="webdavSettings.username"
                     />
@@ -148,13 +149,13 @@
                     </label>
                     <input 
                       type="password" 
-                      class="input input-bordered w-full bg-base-100 text-base-content" 
+                      class="input input-bordered w-full bg-base-100 text-base-content focus:input-primary" 
                       placeholder="WebDAV密码" 
                       v-model="webdavSettings.password"
                     />
                   </div>
                   
-                  <div class="flex gap-3">
+                  <div class="flex flex-wrap sm:flex-nowrap gap-3 mt-6">
                     <button 
                       type="button" 
                       class="btn btn-primary"
@@ -177,7 +178,7 @@
                     
                     <button 
                       type="button" 
-                      class="btn btn-primary"
+                      class="btn btn-accent"
                       @click="backupNow"
                       :disabled="loading || !isConfigured"
                     >
@@ -186,29 +187,34 @@
                     </button>
                   </div>
                   
-                  <div v-if="backupStatus.last_backup" class="mt-2 text-sm text-base-content/70">
-                    上次备份时间: {{ backupStatus.last_backup }}
+                  <div v-if="backupStatus.last_backup" class="mt-4 flex items-center gap-2 text-sm text-success">
+                    <span class="icon-[tabler--check-circle] size-5"></span>
+                    <span>上次备份时间: {{ backupStatus.last_backup }}</span>
                   </div>
                   
-                  <div v-if="statusMessage" class="alert mt-3" :class="statusSuccess ? 'alert-success' : 'alert-error'">
-                    <span>{{ statusMessage }}</span>
+                  <div v-if="statusMessage" class="alert mt-4" :class="statusSuccess ? 'alert-success' : 'alert-error'">
+                    <div class="flex items-center gap-2">
+                      <span v-if="statusSuccess" class="icon-[tabler--circle-check] size-5"></span>
+                      <span v-else class="icon-[tabler--alert-circle] size-5"></span>
+                      <span>{{ statusMessage }}</span>
+                    </div>
                   </div>
                   
                   <!-- 备份历史记录 -->
-                  <div v-if="isConfigured && backupList.length > 0" class="mt-4">
-                    <div class="divider">备份历史</div>
+                  <div v-if="isConfigured && backupList.length > 0" class="mt-6">
+                    <div class="divider text-base-content/70 text-sm">备份历史</div>
                     
                     <div class="overflow-x-auto">
                       <table class="table table-zebra">
                         <thead>
                           <tr>
-                            <th>备份时间</th>
-                            <th>文件名</th>
-                            <th>操作</th>
+                            <th class="text-base-content/80">备份时间</th>
+                            <th class="text-base-content/80">文件名</th>
+                            <th class="text-base-content/80">操作</th>
                           </tr>
                         </thead>
                         <tbody>
-                          <tr v-for="backup in backupList" :key="backup.filename">
+                          <tr v-for="backup in backupList" :key="backup.filename" class="hover:bg-base-200">
                             <td>{{ backup.time }}</td>
                             <td class="truncate max-w-[200px]">{{ backup.filename }}</td>
                             <td>
@@ -235,6 +241,10 @@
                         </tbody>
                       </table>
                     </div>
+                    
+                    <p class="text-xs text-base-content/60 mt-3">
+                      备份文件包含模型扫描结果和应用配置信息
+                    </p>
                   </div>
                 </div>
               </div>
@@ -380,6 +390,9 @@ async function testConnection() {
   
   try {
     loading.value = true;
+    statusMessage.value = '正在测试连接...';
+    statusSuccess.value = false;
+    
     const response = await fetch('/api/webdav/test', {
       method: 'POST',
       headers: {
@@ -393,10 +406,16 @@ async function testConnection() {
     });
     
     const result = await response.json();
-    statusMessage.value = result.message;
-    statusSuccess.value = result.success;
+    
+    if (response.ok) {
+      statusMessage.value = result.message || '连接测试成功';
+      statusSuccess.value = true;
+    } else {
+      statusMessage.value = result.detail || '连接测试失败';
+      statusSuccess.value = false;
+    }
   } catch (e) {
-    statusMessage.value = '连接测试失败';
+    statusMessage.value = '连接测试失败: ' + (e instanceof Error ? e.message : String(e));
     statusSuccess.value = false;
     console.error('测试WebDAV连接失败', e);
   } finally {
@@ -407,6 +426,8 @@ async function testConnection() {
 async function saveWebDAVSettings() {
   try {
     loading.value = true;
+    statusMessage.value = '正在保存设置...';
+    statusSuccess.value = false;
     
     // 在本地保存密码
     if (webdavSettings.value.password) {
@@ -426,14 +447,17 @@ async function saveWebDAVSettings() {
     });
     
     const result = await response.json();
-    statusMessage.value = result.message;
-    statusSuccess.value = result.success;
     
-    if (result.success) {
+    if (response.ok) {
+      statusMessage.value = result.message || '设置保存成功';
+      statusSuccess.value = true;
       await loadWebDAVStatus();
+    } else {
+      statusMessage.value = result.detail || '保存设置失败';
+      statusSuccess.value = false;
     }
   } catch (e) {
-    statusMessage.value = '保存设置失败';
+    statusMessage.value = '保存设置失败: ' + (e instanceof Error ? e.message : String(e));
     statusSuccess.value = false;
     console.error('保存WebDAV设置失败', e);
   } finally {
