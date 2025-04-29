@@ -79,5 +79,11 @@ class ConfigManager:
             'max_history': 100,
             'backup_enabled': True,
             'backup_interval': 86400,  # 24小时
-            'backup_count': 7
+            'backup_count': 7,
+            # WebDAV 相关配置
+            'webdav_enabled': False,
+            'webdav_url': '',
+            'webdav_username': '',
+            'webdav_password': '',
+            'last_backup': None
         } 

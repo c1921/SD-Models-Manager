@@ -5,6 +5,7 @@ import threading
 import uvicorn
 import os
 import sys
+import asyncio
 from pathlib import Path
 
 from src.core.config_manager import ConfigManager
@@ -15,6 +16,8 @@ from src.api.network_api import setup_network_routes
 from src.api.common_api import setup_common_routes
 from src.api.frontend_api import setup_frontend_routes
 from src.api.prompt_routes import setup_prompt_routes
+from src.api.webdav_api import router as webdav_router
+from src.services.backup_service import BackupService
 from src.utils.file_utils import find_free_port
 
 def open_browser(url: str):
@@ -48,6 +51,7 @@ if __name__ == "__main__":
     parser.add_argument('--no-browser', action='store_true', help='不自动打开浏览器')
     parser.add_argument('--dev', action='store_true', help='开发模式 (等同于 --frontend http://localhost:5173 --no-browser)')
     parser.add_argument('--config', default='config.json', help='配置文件路径')
+    parser.add_argument('--no-backup', action='store_true', help='禁用自动备份服务')
     args = parser.parse_args()
 
     # 获取可用端口
@@ -97,6 +101,23 @@ if __name__ == "__main__":
     
     # 设置提示词相关路由
     setup_prompt_routes(app)
+    
+    # 添加WebDAV备份路由
+    app.include_router(webdav_router)
+    
+    # 启动自动备份服务（除非指定了 --no-backup）
+    backup_service = None
+    if not args.no_backup:
+        backup_service = BackupService(args.config)
+        
+        @app.on_event("startup")
+        async def start_backup_service():
+            await backup_service.start()
+            
+        @app.on_event("shutdown")
+        async def stop_backup_service():
+            if backup_service:
+                await backup_service.stop()
     
     # 在新线程中打开浏览器（如果未指定--no-browser）
     if not args.no_browser and frontend_url:

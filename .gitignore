@@ -74,5 +74,7 @@ static/images/
 version_info.txt
 
 data/
+data_backup_*/
+logs/
 
 update_version.py
